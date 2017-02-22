@@ -1,0 +1,70 @@
+_store
+
+# IDE
+.cproject
+.project
+
+# Vim
+*.swp
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+objs/
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Generated Images
+*.ppm
+
+# Prog 1# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+objs/
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# PageRank
+pagerank/pr
+
+# BFS
+bfs/bfs
+
