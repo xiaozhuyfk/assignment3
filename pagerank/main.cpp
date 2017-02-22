@@ -19,24 +19,25 @@
 #define PageRankConvergence 1e-7d
 
 void reference_pageRank(Graph g, double* solution, double damping,
-                        double convergence);
+        double convergence);
 
 int main(int argc, char** argv) {
 
-    int  num_threads = -1;
+    int num_threads = -1;
     std::string graph_filename;
 
     if (argc < 2)
-    {
+            {
         std::cerr << "Usage: <path/to/graph/file> [manual_set_thread_count]\n";
         std::cerr << "To get results across all thread counts: <path/to/graph/file>\n";
-        std::cerr << "Run with certain threads count (no correctness run): <path/to/graph/file> <thread_count>\n";
+        std::cerr
+                << "Run with certain threads count (no correctness run): <path/to/graph/file> <thread_count>\n";
         exit(1);
     }
 
     int thread_count = -1;
     if (argc == 3)
-    {
+            {
         thread_count = atoi(argv[2]);
     }
 
@@ -47,7 +48,7 @@ int main(int argc, char** argv) {
     printf("----------------------------------------------------------\n");
     printf("Max system threads = %d\n", omp_get_max_threads());
     if (thread_count > 0)
-    {
+            {
         thread_count = std::min(thread_count, omp_get_max_threads());
         printf("Running with %d threads\n", thread_count);
     }
@@ -55,7 +56,7 @@ int main(int argc, char** argv) {
 
     printf("Loading graph...\n");
     if (USE_BINARY_GRAPH) {
-      g = load_graph_binary(graph_filename.c_str());
+        g = load_graph_binary(graph_filename.c_str());
     } else {
         g = load_graph(argv[1]);
         printf("storing binary form of graph!\n");
@@ -70,7 +71,7 @@ int main(int argc, char** argv) {
 
     //If we want to run on all threads
     if (thread_count <= -1)
-    {
+            {
         //Static num_threads to get consistent usage across trials
         int max_threads = omp_get_max_threads();
 
@@ -78,21 +79,21 @@ int main(int argc, char** argv) {
 
         //dynamic num_threads
         for (int i = 1; i < max_threads; i *= 2) {
-          num_threads.push_back(i);
+            num_threads.push_back(i);
         }
         num_threads.push_back(max_threads);
         int n_usage = num_threads.size();
 
         double* sol1;
-        sol1 = (double*)malloc(sizeof(double) * g->num_nodes);
+        sol1 = (double*) malloc(sizeof(double) * g->num_nodes);
         double* sol2;
-        sol2 = (double*)malloc(sizeof(double) * g->num_nodes);
+        sol2 = (double*) malloc(sizeof(double) * g->num_nodes);
         double* sol3;
-        sol3 = (double*)malloc(sizeof(double) * g->num_nodes);
+        sol3 = (double*) malloc(sizeof(double) * g->num_nodes);
 
         //Solution sphere
         double* sol4;
-        sol4 = (double*)malloc(sizeof(double) * g->num_nodes);
+        sol4 = (double*) malloc(sizeof(double) * g->num_nodes);
 
         double pagerank_base;
         double pagerank_time;
@@ -113,7 +114,7 @@ int main(int argc, char** argv) {
 
         //Loop through num_threads values;
         for (int i = 0; i < n_usage; i++)
-        {
+                {
             printf("----------------------------------------------------------\n");
             std::cout << "Running with " << num_threads[i] << " threads" << std::endl;
             //Set thread count
@@ -127,9 +128,8 @@ int main(int argc, char** argv) {
             //Run reference implementation
             start = CycleTimer::currentSeconds();
             reference_pageRank(g, sol4, PageRankDampening,
-                               PageRankConvergence);
+            PageRankConvergence);
             ref_pagerank_time = CycleTimer::currentSeconds() - start;
-
 
             if (num_threads[i] == 1) {
                 pagerank_base = pagerank_time;
@@ -138,8 +138,8 @@ int main(int argc, char** argv) {
 
             std::cout << "Testing Correctness of Page Rank\n";
             if (!compareApprox(g, sol4, sol1)) {
-              pr_check = false;
-              //break;
+                pr_check = false;
+                //break;
             }
 
             char buf[1024];
@@ -147,12 +147,12 @@ int main(int argc, char** argv) {
             char relative_buf[1024];
 
             sprintf(buf, "%4d:   %.4f (%.4fx)\n",
-                    num_threads[i], pagerank_time, pagerank_base/pagerank_time);
+                    num_threads[i], pagerank_time, pagerank_base / pagerank_time);
             sprintf(ref_buf, "%4d:   %.4f (%.4fx)\n",
                     num_threads[i], ref_pagerank_time,
-                    ref_pagerank_base/ref_pagerank_time);
+                    ref_pagerank_base / ref_pagerank_time);
             sprintf(relative_buf, "%4d:     %.2fp\n",
-                    num_threads[i], 100*pagerank_time/ref_pagerank_time);
+                    num_threads[i], 100 * pagerank_time / ref_pagerank_time);
 
             timing << buf;
             ref_timing << ref_buf;
@@ -170,22 +170,22 @@ int main(int argc, char** argv) {
         std::cout << "Correctness: " << std::endl;
         if (!pr_check)
             std::cout << "Page Rank is not Correct" << std::endl;
-        std::cout << std::endl << "Timing: " << std::endl <<  relative_timing.str();
+        std::cout << std::endl << "Timing: " << std::endl << relative_timing.str();
     }
     //Run the code with only one thread count and only report speedup
     else
     {
         bool pr_check = true;
         double* sol1;
-        sol1 = (double*)malloc(sizeof(double) * g->num_nodes);
+        sol1 = (double*) malloc(sizeof(double) * g->num_nodes);
         double* sol2;
-        sol2 = (double*)malloc(sizeof(double) * g->num_nodes);
+        sol2 = (double*) malloc(sizeof(double) * g->num_nodes);
         double* sol3;
-        sol3 = (double*)malloc(sizeof(double) * g->num_nodes);
+        sol3 = (double*) malloc(sizeof(double) * g->num_nodes);
 
         //Double* sphere
         double* sol4;
-        sol4 = (double*)malloc(sizeof(double) * g->num_nodes);
+        sol4 = (double*) malloc(sizeof(double) * g->num_nodes);
 
         double pagerank_base;
         double pagerank_time;
@@ -217,9 +217,8 @@ int main(int argc, char** argv) {
 
         std::cout << "Testing Correctness of Page Rank\n";
         if (!compareApprox(g, sol4, sol1)) {
-          pr_check = false;
+            pr_check = false;
         }
-
 
         char buf[1024];
         char ref_buf[1024];

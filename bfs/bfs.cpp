@@ -20,7 +20,7 @@ void vertex_set_clear(vertex_set* list) {
 
 void vertex_set_init(vertex_set* list, int count) {
     list->max_vertices = count;
-    list->vertices = (int*)malloc(sizeof(int) * list->max_vertices);
+    list->vertices = (int*) malloc(sizeof(int) * list->max_vertices);
     vertex_set_clear(list);
 }
 
@@ -28,23 +28,23 @@ void vertex_set_init(vertex_set* list, int count) {
 // follow all outgoing edges, and add all neighboring vertices to the
 // new_frontier.
 void top_down_step(
-    Graph g,
-    vertex_set* frontier,
-    vertex_set* new_frontier,
-    int* distances)
-{
+        Graph g,
+        vertex_set* frontier,
+        vertex_set* new_frontier,
+        int* distances) {
 
-    for (int i=0; i<frontier->count; i++) {
+    for (int i = 0; i < frontier->count; i++) {
 
         int node = frontier->vertices[i];
 
         int start_edge = g->outgoing_starts[node];
         int end_edge = (node == g->num_nodes - 1)
-                           ? g->num_edges
-                           : g->outgoing_starts[node + 1];
+                       ? g->num_edges
+                         :
+                         g->outgoing_starts[node + 1];
 
         // attempt to add all neighbors to the new frontier
-        for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
+        for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
             int outgoing = g->outgoing_edges[neighbor];
 
             if (distances[outgoing] == NOT_VISITED_MARKER) {
@@ -71,7 +71,7 @@ void bfs_top_down(Graph graph, solution* sol) {
     vertex_set* new_frontier = &list2;
 
     // initialize all nodes to NOT_VISITED
-    for (int i=0; i<graph->num_nodes; i++)
+    for (int i = 0; i < graph->num_nodes; i++)
         sol->distances[i] = NOT_VISITED_MARKER;
 
     // setup frontier with the root node
@@ -89,8 +89,8 @@ void bfs_top_down(Graph graph, solution* sol) {
         top_down_step(graph, frontier, new_frontier, sol->distances);
 
 #ifdef VERBOSE
-    double end_time = CycleTimer::currentSeconds();
-    printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
+        double end_time = CycleTimer::currentSeconds();
+        printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
 #endif
 
         // swap pointers
@@ -100,8 +100,7 @@ void bfs_top_down(Graph graph, solution* sol) {
     }
 }
 
-void bfs_bottom_up(Graph graph, solution* sol)
-{
+void bfs_bottom_up(Graph graph, solution* sol) {
     // 15-418/618 students:
     //
     // You will need to implement the "bottom up" BFS here as
@@ -115,8 +114,7 @@ void bfs_bottom_up(Graph graph, solution* sol)
     // each step of the BFS process.
 }
 
-void bfs_hybrid(Graph graph, solution* sol)
-{
+void bfs_hybrid(Graph graph, solution* sol) {
     // 15-418/618 students:
     //
     // You will need to implement the "hybrid" BFS here as

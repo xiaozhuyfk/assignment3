@@ -20,20 +20,21 @@ void reference_bfs_hybrid(Graph graph, solution* sol);
 
 int main(int argc, char** argv) {
 
-    int  num_threads = -1;
+    int num_threads = -1;
     std::string graph_filename;
 
     if (argc < 2)
-    {
+            {
         std::cerr << "Usage: <path/to/graph/file> [manual_set_thread_count]\n";
         std::cerr << "To get results across all thread counts: <path/to/graph/file>\n";
-        std::cerr << "Run with certain threads count (no correctness run): <path/to/graph/file> <thread_count>\n";
+        std::cerr
+                << "Run with certain threads count (no correctness run): <path/to/graph/file> <thread_count>\n";
         exit(1);
     }
 
     int thread_count = -1;
     if (argc == 3)
-    {
+            {
         thread_count = atoi(argv[2]);
     }
 
@@ -44,7 +45,7 @@ int main(int argc, char** argv) {
     printf("----------------------------------------------------------\n");
     printf("Max system threads = %d\n", omp_get_max_threads());
     if (thread_count > 0)
-    {
+            {
         thread_count = std::min(thread_count, omp_get_max_threads());
         printf("Running with %d threads\n", thread_count);
     }
@@ -52,7 +53,7 @@ int main(int argc, char** argv) {
 
     printf("Loading graph...\n");
     if (USE_BINARY_GRAPH) {
-      g = load_graph_binary(graph_filename.c_str());
+        g = load_graph_binary(graph_filename.c_str());
     } else {
         g = load_graph(argv[1]);
         printf("storing binary form of graph!\n");
@@ -67,7 +68,7 @@ int main(int argc, char** argv) {
 
     //If we want to run on all threads
     if (thread_count <= -1)
-    {
+            {
         //Static assignment to get consistent usage across trials
         int max_threads = omp_get_max_threads();
 
@@ -76,21 +77,21 @@ int main(int argc, char** argv) {
 
         //dynamic num_threads
         for (int i = 1; i < max_threads; i *= 2) {
-          num_threads.push_back(i);
+            num_threads.push_back(i);
         }
         num_threads.push_back(max_threads);
         int n_usage = num_threads.size();
 
         solution sol1;
-        sol1.distances = (int*)malloc(sizeof(int) * g->num_nodes);
+        sol1.distances = (int*) malloc(sizeof(int) * g->num_nodes);
         solution sol2;
-        sol2.distances = (int*)malloc(sizeof(int) * g->num_nodes);
+        sol2.distances = (int*) malloc(sizeof(int) * g->num_nodes);
         solution sol3;
-        sol3.distances = (int*)malloc(sizeof(int) * g->num_nodes);
+        sol3.distances = (int*) malloc(sizeof(int) * g->num_nodes);
 
         //Solution sphere
         solution sol4;
-        sol4.distances = (int*)malloc(sizeof(int) * g->num_nodes);
+        sol4.distances = (int*) malloc(sizeof(int) * g->num_nodes);
 
         double hybrid_base, top_base, bottom_base;
         double hybrid_time, top_time, bottom_time;
@@ -111,7 +112,7 @@ int main(int argc, char** argv) {
 
         //Loop through assignment values;
         for (int i = 0; i < n_usage; i++)
-        {
+                {
             printf("----------------------------------------------------------\n");
             std::cout << "Running with " << num_threads[i] << " threads" << std::endl;
             //Set thread count
@@ -128,9 +129,10 @@ int main(int argc, char** argv) {
             ref_top_time = CycleTimer::currentSeconds() - start;
 
             std::cout << "Testing Correctness of Top Down\n";
-            for (int j=0; j<g->num_nodes; j++) {
+            for (int j = 0; j < g->num_nodes; j++) {
                 if (sol1.distances[j] != sol4.distances[j]) {
-                    fprintf(stderr, "*** Results disagree at %d: %d, %d\n", j, sol1.distances[j], sol4.distances[j]);
+                    fprintf(stderr, "*** Results disagree at %d: %d, %d\n", j, sol1.distances[j],
+                            sol4.distances[j]);
                     tds_check = false;
                     break;
                 }
@@ -147,14 +149,14 @@ int main(int argc, char** argv) {
             ref_bottom_time = CycleTimer::currentSeconds() - start;
 
             std::cout << "Testing Correctness of Bottom Up\n";
-            for (int j=0; j<g->num_nodes; j++) {
+            for (int j = 0; j < g->num_nodes; j++) {
                 if (sol2.distances[j] != sol4.distances[j]) {
-                    fprintf(stderr, "*** Results disagree at %d: %d, %d\n", j, sol2.distances[j], sol4.distances[j]);
+                    fprintf(stderr, "*** Results disagree at %d: %d, %d\n", j, sol2.distances[j],
+                            sol4.distances[j]);
                     bus_check = false;
                     break;
                 }
             }
-
 
             start = CycleTimer::currentSeconds();
             bfs_hybrid(g, &sol3);
@@ -166,17 +168,17 @@ int main(int argc, char** argv) {
             ref_hybrid_time = CycleTimer::currentSeconds() - start;
 
             std::cout << "Testing Correctness of Hybrid\n";
-            for (int j=0; j<g->num_nodes; j++) {
+            for (int j = 0; j < g->num_nodes; j++) {
                 if (sol3.distances[j] != sol4.distances[j]) {
-                    fprintf(stderr, "*** Results disagree at %d: %d, %d\n", j, sol3.distances[j], sol4.distances[j]);
+                    fprintf(stderr, "*** Results disagree at %d: %d, %d\n", j, sol3.distances[j],
+                            sol4.distances[j]);
                     hs_check = false;
                     break;
                 }
             }
 
-
             if (i == 0)
-            {
+                    {
                 hybrid_base = hybrid_time;
                 ref_hybrid_base = ref_hybrid_time;
                 top_base = top_time;
@@ -191,13 +193,15 @@ int main(int argc, char** argv) {
             char relative_buf[1024];
 
             sprintf(buf, "%4d:   %.4f (%.4fx)     %.4f (%.4fx)     %.4f (%.4fx)\n",
-                    num_threads[i], top_time, top_base/top_time, bottom_time,
-                    bottom_base/bottom_time, hybrid_time, hybrid_base/hybrid_time);
+                    num_threads[i], top_time, top_base / top_time, bottom_time,
+                    bottom_base / bottom_time, hybrid_time, hybrid_base / hybrid_time);
             sprintf(ref_buf, "%4d:   %.4f (%.4fx)     %.4f (%.4fx)     %.4f (%.4fx)\n",
-                    num_threads[i], ref_top_time, ref_top_base/ref_top_time, ref_bottom_time,
-                    ref_bottom_base/ref_bottom_time, ref_hybrid_time, ref_hybrid_base/ref_hybrid_time);
+                    num_threads[i], ref_top_time, ref_top_base / ref_top_time, ref_bottom_time,
+                    ref_bottom_base / ref_bottom_time, ref_hybrid_time,
+                    ref_hybrid_base / ref_hybrid_time);
             sprintf(relative_buf, "%4d:   %.2fp     %.2fp     %.2fp\n",
-                    num_threads[i], 100*top_time/ref_top_time, 100*bottom_time/ref_bottom_time, 100 * hybrid_time/ref_hybrid_time);
+                    num_threads[i], 100 * top_time / ref_top_time,
+                    100 * bottom_time / ref_bottom_time, 100 * hybrid_time / ref_hybrid_time);
 
             timing << buf;
             ref_timing << ref_buf;
@@ -219,22 +223,22 @@ int main(int argc, char** argv) {
             std::cout << "Bottom Up Search is not Correct" << std::endl;
         if (!hs_check)
             std::cout << "Hybrid Search is not Correct" << std::endl;
-        std::cout << std::endl << "Timing: " << std::endl <<  relative_timing.str();
+        std::cout << std::endl << "Timing: " << std::endl << relative_timing.str();
     }
     //Run the code with only one thread count and only report speedup
     else
     {
         bool tds_check = true, bus_check = true, hs_check = true;
         solution sol1;
-        sol1.distances = (int*)malloc(sizeof(int) * g->num_nodes);
+        sol1.distances = (int*) malloc(sizeof(int) * g->num_nodes);
         solution sol2;
-        sol2.distances = (int*)malloc(sizeof(int) * g->num_nodes);
+        sol2.distances = (int*) malloc(sizeof(int) * g->num_nodes);
         solution sol3;
-        sol3.distances = (int*)malloc(sizeof(int) * g->num_nodes);
+        sol3.distances = (int*) malloc(sizeof(int) * g->num_nodes);
 
         //Solution sphere
         solution sol4;
-        sol4.distances = (int*)malloc(sizeof(int) * g->num_nodes);
+        sol4.distances = (int*) malloc(sizeof(int) * g->num_nodes);
 
         double hybrid_time, top_time, bottom_time;
         double ref_hybrid_time, ref_top_time, ref_bottom_time;
@@ -242,7 +246,6 @@ int main(int argc, char** argv) {
         double start;
         std::stringstream timing;
         std::stringstream ref_timing;
-
 
         timing << "Threads  Top Down    Bottom Up   Hybrid\n";
         ref_timing << "Threads  Top Down    Bottom Up   Hybrid\n";
@@ -263,14 +266,14 @@ int main(int argc, char** argv) {
         ref_top_time = CycleTimer::currentSeconds() - start;
 
         std::cout << "Testing Correctness of Top Down\n";
-        for (int j=0; j<g->num_nodes; j++) {
+        for (int j = 0; j < g->num_nodes; j++) {
             if (sol1.distances[j] != sol4.distances[j]) {
-                fprintf(stderr, "*** Results disagree at %d: %d, %d\n", j, sol1.distances[j], sol4.distances[j]);
+                fprintf(stderr, "*** Results disagree at %d: %d, %d\n", j, sol1.distances[j],
+                        sol4.distances[j]);
                 tds_check = false;
                 break;
             }
         }
-
 
         //Run implementations
         start = CycleTimer::currentSeconds();
@@ -283,14 +286,14 @@ int main(int argc, char** argv) {
         ref_bottom_time = CycleTimer::currentSeconds() - start;
 
         std::cout << "Testing Correctness of Bottom Up\n";
-        for (int j=0; j<g->num_nodes; j++) {
+        for (int j = 0; j < g->num_nodes; j++) {
             if (sol2.distances[j] != sol4.distances[j]) {
-                fprintf(stderr, "*** Results disagree at %d: %d, %d\n", j, sol2.distances[j], sol4.distances[j]);
+                fprintf(stderr, "*** Results disagree at %d: %d, %d\n", j, sol2.distances[j],
+                        sol4.distances[j]);
                 bus_check = false;
                 break;
             }
         }
-
 
         start = CycleTimer::currentSeconds();
         bfs_hybrid(g, &sol3);
@@ -302,14 +305,14 @@ int main(int argc, char** argv) {
         ref_hybrid_time = CycleTimer::currentSeconds() - start;
 
         std::cout << "Testing Correctness of Hybrid\n";
-        for (int j=0; j<g->num_nodes; j++) {
+        for (int j = 0; j < g->num_nodes; j++) {
             if (sol3.distances[j] != sol4.distances[j]) {
-                fprintf(stderr, "*** Results disagree at %d: %d, %d\n", j, sol3.distances[j], sol4.distances[j]);
+                fprintf(stderr, "*** Results disagree at %d: %d, %d\n", j, sol3.distances[j],
+                        sol4.distances[j]);
                 hs_check = false;
                 break;
             }
         }
-
 
         char buf[1024];
         char ref_buf[1024];
