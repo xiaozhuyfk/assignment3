@@ -30,8 +30,7 @@ void build_start(graph* graph, int* scratch) {
 void build_edges(graph* graph, int* scratch) {
     int num_nodes = graph->num_nodes;
     graph->outgoing_edges = (int*) malloc(sizeof(int) * graph->num_edges);
-    for (int i = 0; i < graph->num_edges; i++)
-            {
+    for (int i = 0; i < graph->num_edges; i++) {
         graph->outgoing_edges[i] = scratch[num_nodes + i];
     }
 }

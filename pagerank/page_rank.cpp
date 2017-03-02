@@ -22,8 +22,36 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
 
     int numNodes = num_nodes(g);
     double equal_prob = 1.0 / numNodes;
+    bool converged = false;
+
+    #pragma omp parallel for
     for (int i = 0; i < numNodes; ++i) {
         solution[i] = equal_prob;
+    }
+
+
+    double *old = malloc(sizeof(double) * numNodes);
+    while (!converged) {
+        #pragma omp parallel for
+        for (int i = 0; i  numNodes; i++) {
+            old[i] = solution[i];
+        }
+
+        #pragma omp parallel for
+        for (int i = 0; i < numNodes; i++) {
+            solution[i] = 0;
+            for (int j = 0; j < incoming_size(g, i); j++) {
+                Vertex in = incoming_begin(g,i)[j];
+                solution[i] += old[in] / outgoing_size(g, in);
+            }
+            solution[i] = (damping * solution[i]) + (1.0 - damping) / numNodes;
+        }
+
+        double diff = 0;
+        for (int i = 0; i < numNodes; i++) {
+            diff += abs(solution[i] - old[i]);
+        }
+        converged = (diff < convergence);
     }
 
     /* 418/618 Students: Implement the page rank algorithm here.  You
@@ -39,7 +67,7 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
 
      // compute score_new[vi] for all nodes vi:
      score_new[vi] = sum over all nodes vj reachable from incoming edges
-     { score_old[vj] / number of edges leaving vj  }
+     { score_old[vj] / number of edges leaving j  }
      score_new[vi] = (damping * score_new[vi]) + (1.0-damping) / numNodes;
 
      // Add a fraction of the leftover mass from all nodes with no outgoing
