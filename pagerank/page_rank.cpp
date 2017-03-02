@@ -30,10 +30,10 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
     }
 
 
-    double *old = malloc(sizeof(double) * numNodes);
+    double *old = (double *) malloc(sizeof(double) * numNodes);
     while (!converged) {
         #pragma omp parallel for
-        for (int i = 0; i  numNodes; i++) {
+        for (int i = 0; i < numNodes; i++) {
             old[i] = solution[i];
         }
 
