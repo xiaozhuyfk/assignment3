@@ -44,7 +44,7 @@ void top_down_step(
         const Vertex* end = outgoing_end(g, node);
 
         // attempt to add all neighbors to the new frontier
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
             int outgoing = g->outgoing_edges[neighbor];
 
