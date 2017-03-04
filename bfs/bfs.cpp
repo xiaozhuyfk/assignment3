@@ -178,7 +178,7 @@ void bfs_bottom_up(Graph graph, solution* sol) {
 #endif
 
         // swap pointers
-        vertex_set* tmp = frontier;
+        std::set<int> tmp = frontier;
         frontier = new_frontier;
         new_frontier = tmp;
     }
