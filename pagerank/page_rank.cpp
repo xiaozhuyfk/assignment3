@@ -72,12 +72,12 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
         std::memcpy(old, solution, sizeof(double) * numNodes);
 
         double disjoint_weight = 0;
-        #pragma omp parallel for reduction(+:disjoint_weight)
+        #pragma omp parallel for reduction(+:disjoint_weight) schedule(dynamic)
         for (int j = 0; j < disjoint.size(); j++) {
             disjoint_weight += damping * old[disjoint[j]] / numNodes;
         }
 
-        #pragma omp parallel for
+        #pragma omp parallel for schedule(dynamic)
         for (int i = 0; i < numNodes; i++) {
             solution[i] = 0;
             const Vertex* start = incoming_begin(g, i);
@@ -102,7 +102,7 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
         }
 
         double diff = 0;
-        #pragma opm parallel for reduction(+:diff)
+        #pragma opm parallel for reduction(+:diff) schedule(dynamic)
         for (int i = 0; i < numNodes; i++) {
             diff += std::abs(solution[i] - old[i]);
         }
