@@ -109,6 +109,8 @@ void bottom_up_step(
         std::set<int> frontier,
         int* distances) {
     for (int i = 0; i < g->num_nodes; i++) {
+        if (frontier.find(i) != frontier.end()) continue;
+
         const Vertex* start = incoming_begin(g, i);
         const Vertex* end = incoming_end(g, i);
         for (const Vertex *v = start; v != end; v++) {
