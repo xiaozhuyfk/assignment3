@@ -92,6 +92,7 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
                 solution[i] += damping * old[disjoint[j]] / numNodes;
             }
         }
+        printf("iter\n");
 
         double diff = 0;
         #pragma opm parallel for reduction(+:diff)
