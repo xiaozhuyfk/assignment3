@@ -31,7 +31,7 @@ void top_down_step(
         vertex_set* new_frontier,
         int* distances) {
 
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for (int i = 0; i < frontier->count; i++) {
 
         int node = frontier->vertices[i];
