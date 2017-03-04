@@ -104,28 +104,31 @@ void bfs_top_down(Graph graph, solution* sol) {
     }
 }
 
-bool bottom_up_step(
+void bottom_up_step(
         Graph g,
+        std::set<int> rest,
         std::set<int> frontier,
+        std::set<int> new_frontier,
         int* distances) {
-    bool add = false;
-    for (int i = 0; i < g->num_nodes; i++) {
-        if (frontier.find(i) != frontier.end()) continue;
+    for (std::set<int>::iterator it = rest.begin(); it != rest.end(); ) {
+        int node = *it;
+        if (frontier.find(node) != frontier.end()) continue;
 
-        const Vertex* start = incoming_begin(g, i);
-        const Vertex* end = incoming_end(g, i);
+        const Vertex* start = incoming_begin(g, node);
+        const Vertex* end = incoming_end(g, node);
         for (const Vertex *v = start; v != end; v++) {
             Vertex in = *v;
             if (frontier.find(in) != frontier.end()) {
-                if (distances[i] == NOT_VISITED_MARKER) {
-                    distances[i] = distances[in] + 1;
-                    frontier.insert(i);
-                    add = true;
+                if (distances[node] == NOT_VISITED_MARKER) {
+                    distances[node] = distances[in] + 1;
+                    new_frontier.insert(node);
+                    rest.erase(it);
+                    break;
                 }
             }
         }
+        it++;
     }
-    return add;
 }
 
 void bfs_bottom_up(Graph graph, solution* sol) {
@@ -146,11 +149,14 @@ void bfs_bottom_up(Graph graph, solution* sol) {
 
     //vertex_set* frontier = &list;
     std::set<int> frontier;
+    std::set<int> rest;
 
     // initialize all nodes to NOT_VISITED
     #pragma omp parallel for
     for (int i = 0; i < graph->num_nodes; i++)
         sol->distances[i] = NOT_VISITED_MARKER;
+
+    for (int i = 1; i < graph->num_nodes; i++) rest.insert(i);
 
     // setup frontier with the root node
     //frontier->vertices[frontier->count++] = ROOT_NODE_ID;
@@ -162,13 +168,19 @@ void bfs_bottom_up(Graph graph, solution* sol) {
 #ifdef VERBOSE
         double start_time = CycleTimer::currentSeconds();
 #endif
-
-        if (!bottom_up_step(graph, frontier, sol->distances)) break;
+        std::set<int> new_frontier;
+        bottom_up_step(graph, rest, frontier, new_frontier, sol->distances);
+        if (new_frontier.size() == 0) break;
 
 #ifdef VERBOSE
         double end_time = CycleTimer::currentSeconds();
         printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
 #endif
+
+        // swap pointers
+        vertex_set* tmp = frontier;
+        frontier = new_frontier;
+        new_frontier = tmp;
     }
 }
 
