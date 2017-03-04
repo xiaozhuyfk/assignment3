@@ -45,11 +45,18 @@ void top_down_step(
         for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
             int outgoing = g->outgoing_edges[neighbor];
 
-            if (!__sync_bool_compare_and_swap(&distances[outgoing],
-                    NOT_VISITED_MARKER,
-                    distances[node] + 1)) {
-                int index = new_frontier->count++;
-                new_frontier->vertices[index] = outgoing;
+            while (true) {
+                bool success = __sync_bool_compare_and_swap(
+                        &distances[outgoing],
+                        NOT_VISITED_MARKER,
+                        distances[node] + 1);
+                if (success) {
+                    int index = new_frontier->count++;
+                    new_frontier->vertices[index] = outgoing;
+                    break;
+                } else {
+                    if (distances[outgoing] != NOT_VISITED_MARKER) break;
+                }
             }
 
             /*
