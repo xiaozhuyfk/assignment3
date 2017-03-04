@@ -82,6 +82,7 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
             }
             solution[i] = (damping * solution[i]) + (1.0 - damping) / numNodes;
 
+            #pragma omp parallel for
             for (int j = 0; j < disjoint.size(); j++) {
                 solution[i] += damping * old[disjoint[j]] / numNodes;
             }
