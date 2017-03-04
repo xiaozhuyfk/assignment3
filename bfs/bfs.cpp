@@ -31,15 +31,14 @@ void top_down_step(
         vertex_set* new_frontier,
         int* distances) {
 
+    #pragma omp parallel for
     for (int i = 0; i < frontier->count; i++) {
 
         int node = frontier->vertices[i];
 
         int start_edge = g->outgoing_starts[node];
-        int end_edge = (node == g->num_nodes - 1)
-                       ? g->num_edges
-                         :
-                         g->outgoing_starts[node + 1];
+        int end_edge = (node == g->num_nodes - 1) ?
+                g->num_edges : g->outgoing_starts[node + 1];
 
         // attempt to add all neighbors to the new frontier
         for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
@@ -69,6 +68,7 @@ void bfs_top_down(Graph graph, solution* sol) {
     vertex_set* new_frontier = &list2;
 
     // initialize all nodes to NOT_VISITED
+    #pragma omp parallel for
     for (int i = 0; i < graph->num_nodes; i++)
         sol->distances[i] = NOT_VISITED_MARKER;
 
