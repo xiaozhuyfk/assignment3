@@ -103,6 +103,28 @@ void bfs_top_down(Graph graph, solution* sol) {
     }
 }
 
+void bottom_up_step(
+        Graph g,
+        vertex_set* frontier,
+        int* distances) {
+    for (int i = 0; i < g->num_nodes; i++) {
+        const Vertex* start = incoming_begin(g, i);
+        const Vertex* end = incoming_end(g, i);
+        for (const Vertex *v = start; v != end; v++) {
+            Vertex in = *v;
+            for (int j = 0; j < frontier->count; j++) {
+                if (frontier->vertices[j] == in) {
+                    if (distances[i] == NOT_VISITED_MARKER) {
+                        distances[i] = distances[in] + 1;
+                        int index = frontier->count++;
+                        frontier->vertices[index] = i;
+                    }
+                }
+            }
+        }
+    }
+}
+
 void bfs_bottom_up(Graph graph, solution* sol) {
     // 15-418/618 students:
     //
@@ -115,6 +137,34 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     // As was done in the top-down case, you may wish to organize your
     // code by creating subroutine bottom_up_step() that is called in
     // each step of the BFS process.
+
+    vertex_set list;
+    vertex_set_init(&list, graph->num_nodes);
+
+    vertex_set* frontier = &list;
+
+    // initialize all nodes to NOT_VISITED
+    #pragma omp parallel for
+    for (int i = 0; i < graph->num_nodes; i++)
+        sol->distances[i] = NOT_VISITED_MARKER;
+
+    // setup frontier with the root node
+    frontier->vertices[frontier->count++] = ROOT_NODE_ID;
+    sol->distances[ROOT_NODE_ID] = 0;
+
+    while (frontier->count != graph->num_nodes) {
+
+#ifdef VERBOSE
+        double start_time = CycleTimer::currentSeconds();
+#endif
+
+        bottom_up_step(graph, frontier, sol->distances);
+
+#ifdef VERBOSE
+        double end_time = CycleTimer::currentSeconds();
+        printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
+#endif
+    }
 }
 
 void bfs_hybrid(Graph graph, solution* sol) {
