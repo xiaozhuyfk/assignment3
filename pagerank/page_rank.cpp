@@ -4,6 +4,7 @@
 #include <cmath>
 #include <omp.h>
 #include <utility>
+#include <vector>
 
 #include "../common/CycleTimer.h"
 #include "../common/graph.h"
