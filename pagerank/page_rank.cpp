@@ -17,6 +17,33 @@
 //
 void pageRank(Graph g, double* solution, double damping, double convergence) {
 
+    /* 418/618 Students: Implement the page rank algorithm here.  You
+       are expected to parallelize the algorithm using openMP. Your
+       solution may need to allocate (and free) temporary arrays.
+
+       Basic page rank pseudocode:
+
+       // initialization: see example code above
+       score_old[vi] = 1/numNodes;
+
+       while (!converged) {
+
+           // compute score_new[vi] for all nodes vi:
+           score_new[vi] = sum over all nodes vj reachable from incoming edges
+                              { score_old[vj] / number of edges leaving vj  }
+           score_new[vi] = (damping * score_new[vi]) + (1.0-damping) / numNodes;
+
+           score_new[vi] += sum over all nodes vj with no outgoing edges
+                              { damping * score_old[vj] / numNodes }
+
+           // compute how much per-node scores have changed
+           // quit once algorithm has converged
+
+           global_diff = sum over all nodes vi { abs(score_new[vi] - score_old[vi]) };
+           converged = (global_diff < convergence)
+       }
+    */
+
     // initialize vertex weights to uniform probability. Double
     // precision scores are used to avoid underflow for large graphs
 
@@ -29,6 +56,12 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
         solution[i] = equal_prob;
     }
 
+    std::vector<int> disjoint;
+    for (int i = 0; i < numNodes; i++) {
+        if (outgoing_size(g, i) == 0) {
+            disjoint.push_back(i);
+        }
+    }
 
     double *old = (double *) malloc(sizeof(double) * numNodes);
     while (!converged) {
@@ -40,47 +73,23 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
         #pragma omp parallel for
         for (int i = 0; i < numNodes; i++) {
             solution[i] = 0;
-            for (int j = 0; j < incoming_size(g, i); j++) {
-                Vertex in = incoming_begin(g,i)[j];
+            const Vertex* start = incoming_begin(g, i);
+            const Vertex* end = incoming_end(g, i);
+            for (const Vertex *v = start; v != end; v++) {
+                Vertex in = *v;
                 solution[i] += old[in] / outgoing_size(g, in);
             }
             solution[i] = (damping * solution[i]) + (1.0 - damping) / numNodes;
+
+            for (int j = 0; j < disjoint.size(); j++) {
+                solution[i] += damping * old[disjoint[j]] / numNodes;
+            }
         }
 
         double diff = 0;
         for (int i = 0; i < numNodes; i++) {
-            diff += abs(solution[i] - old[i]);
+            diff += std::abs(solution[i] - old[i]);
         }
         converged = (diff < convergence);
     }
-
-    /* 418/618 Students: Implement the page rank algorithm here.  You
-     are expected to parallelize the algorithm using openMP.  Your
-     solution may need to allocate (and free) temporary arrays.
-
-     Basic page rank pseudocode:
-
-     // initialization: see example code above
-     score_old[vi] = 1/numNodes;
-
-     while (!converged) {
-
-     // compute score_new[vi] for all nodes vi:
-     score_new[vi] = sum over all nodes vj reachable from incoming edges
-     { score_old[vj] / number of edges leaving j  }
-     score_new[vi] = (damping * score_new[vi]) + (1.0-damping) / numNodes;
-
-     // Add a fraction of the leftover mass from all nodes with no outgoing
-     // edges onto this node
-     score_new[vi] += sum over all nodes vj with no outgoing edges
-     { damping * score_old[vj] / numNodes }
-
-     // compute how much per-node scores have changed
-     // quit once algorithm has converged
-
-     global_diff = sum over all nodes vi { abs(score_new[vi] - score_old[vi]) };
-     converged = (global_diff < convergence)
-     }
-
-     */
 }
