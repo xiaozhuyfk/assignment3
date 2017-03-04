@@ -67,8 +67,6 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
         }
     }
 
-    printf("disjoint size: %d\n", disjoint.size());
-
     double *old = (double *) malloc(sizeof(double) * numNodes);
     while (!converged) {
         std::memcpy(old, solution, sizeof(double) * numNodes);
@@ -96,7 +94,7 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
 
             #pragma omp parallel for reduction(+:sum)
             for (int j = 0; j < incoming_size(g, i); j++) {
-                Vertex in = incoming_begin(g, i)[j];
+                Vertex in = start[j];
                 sum += old[in] / outgoing_size(g, in);
             }
             solution[i] = (damping * sum) + (1.0 - damping) / numNodes +
