@@ -45,8 +45,8 @@ void top_down_step(
 
         //#pragma omp parallel for
         for (const Vertex *v = start; v != end; v++) {
-            Vertex neighbor = *v;
-            int outgoing = g->outgoing_edges[neighbor];
+            //Vertex neighbor = *v;
+            int outgoing = *v;
             if (distances[outgoing] == NOT_VISITED_MARKER) {
                 distances[outgoing] = distances[node] + 1;
                 int index = new_frontier->count++;
