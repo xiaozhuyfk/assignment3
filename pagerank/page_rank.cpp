@@ -82,22 +82,12 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
             solution[i] = 0;
             const Vertex* start = incoming_begin(g, i);
             const Vertex* end = incoming_end(g, i);
-            int start_edge = g->incoming_starts[i];
-            int end_edge = (i == g->num_nodes - 1) ?
-                    g->num_edges : g->incoming_starts[i + 1];
             double sum = 0;
 
-            #pragma omp parallel for reduction(+:sum)
-            for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
-                int in = g->incoming_edges[neighbor];
+            for (const Vertex *v = start; v != end; v++) {
+                Vertex in = *v;
                 sum += old[in] / outgoing_size(g, in);
             }
-
-            //#pragma omp parallel for reduction(+:sum)
-            //for (const Vertex *v = start; v != end; v++) {
-            //    Vertex in = *v;
-            //    sum += old[in] / outgoing_size(g, in);
-            //}
 
             solution[i] = (damping * sum) + (1.0 - damping) / numNodes +
                     disjoint_weight;
