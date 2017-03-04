@@ -43,17 +43,6 @@ void top_down_step(
         const Vertex* start = outgoing_begin(g, node);
         const Vertex* end = outgoing_end(g, node);
 
-        // attempt to add all neighbors to the new frontier
-        for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
-            int outgoing = g->outgoing_edges[neighbor];
-
-            if (distances[outgoing] == NOT_VISITED_MARKER) {
-                distances[outgoing] = distances[node] + 1;
-                int index = new_frontier->count++;
-                new_frontier->vertices[index] = outgoing;
-            }
-        }
-
         //#pragma omp parallel for
         /*
         for (const Vertex *v = start; v != end; v++) {
@@ -67,8 +56,6 @@ void top_down_step(
         */
 
         // attempt to add all neighbors to the new frontier
-
-        /*
         #pragma omp parallel for
         for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
             int outgoing = g->outgoing_edges[neighbor];
@@ -87,6 +74,7 @@ void top_down_step(
                 }
             }
 
+            /*
             #pragma omp critical
             {
                 if (distances[outgoing] == NOT_VISITED_MARKER) {
@@ -95,8 +83,8 @@ void top_down_step(
                     new_frontier->vertices[index] = outgoing;
                 }
             }
+            */
         }
-        */
     }
 }
 
