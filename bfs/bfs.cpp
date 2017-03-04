@@ -104,10 +104,11 @@ void bfs_top_down(Graph graph, solution* sol) {
     }
 }
 
-void bottom_up_step(
+bool bottom_up_step(
         Graph g,
         std::set<int> frontier,
         int* distances) {
+    bool add = false;
     for (int i = 0; i < g->num_nodes; i++) {
         if (frontier.find(i) != frontier.end()) continue;
 
@@ -119,10 +120,12 @@ void bottom_up_step(
                 if (distances[i] == NOT_VISITED_MARKER) {
                     distances[i] = distances[in] + 1;
                     frontier.insert(i);
+                    add = true;
                 }
             }
         }
     }
+    return add;
 }
 
 void bfs_bottom_up(Graph graph, solution* sol) {
@@ -160,7 +163,7 @@ void bfs_bottom_up(Graph graph, solution* sol) {
         double start_time = CycleTimer::currentSeconds();
 #endif
 
-        bottom_up_step(graph, frontier, sol->distances);
+        if (!bottom_up_step(graph, frontier, sol->distances)) break;
 
 #ifdef VERBOSE
         double end_time = CycleTimer::currentSeconds();
