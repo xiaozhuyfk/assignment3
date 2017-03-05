@@ -142,7 +142,7 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     // each step of the BFS process.
 
     // initialize all nodes to NOT_VISITED
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for (int i = 0; i < graph->num_nodes; i++)
         sol->distances[i] = NOT_VISITED_MARKER;
 
