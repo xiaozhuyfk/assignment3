@@ -106,7 +106,7 @@ bool bottom_up_step(
 
     bool success = false;
 
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < g->num_nodes; i++) {
         if (distances[i] != NOT_VISITED_MARKER) continue;
 
