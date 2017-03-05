@@ -101,4 +101,5 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
         }
         converged = (diff < convergence);
     }
+    free(old);
 }
