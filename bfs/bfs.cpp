@@ -156,12 +156,12 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     vertex_set_init(&list1, graph->num_nodes);
     vertex_set_init(&list2, graph->num_nodes);
 
-    vertex_set* frontier = &list1;
-    vertex_set* new_frontier = &list2;
+    //vertex_set* frontier = &list1;
+    //vertex_set* new_frontier = &list2;
 
     //vertex_set* frontier = &list;
-    //std::set<int> frontier;
-    //std::set<int> new_frontier;
+    std::set<int> frontier;
+    std::set<int> new_frontier;
 
     // initialize all nodes to NOT_VISITED
     #pragma omp parallel for
