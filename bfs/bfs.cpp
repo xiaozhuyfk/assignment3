@@ -40,7 +40,7 @@ void top_down_step(
                 g->num_edges : g->outgoing_starts[node + 1];
 
         // attempt to add all neighbors to the new frontier
-        #pragma omp for nowait
+        #pragma omp parallel for
         for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
             int outgoing = g->outgoing_edges[neighbor];
             if (distances[outgoing] != NOT_VISITED_MARKER) continue;
@@ -116,13 +116,11 @@ void bfs_top_down(Graph graph, solution* sol) {
 
 void bottom_up_step(
         Graph g,
-        std::set<int> rest,
         std::set<int> frontier,
         std::set<int> new_frontier,
         int* distances) {
-    for (std::set<int>::iterator it = rest.begin(); it != rest.end(); ) {
-        int node = *it;
-
+    for (int i = 0; i < g->num_nodes; i++) {
+        int node = i;
         const Vertex* start = incoming_begin(g, node);
         const Vertex* end = incoming_end(g, node);
         for (const Vertex *v = start; v != end; v++) {
@@ -131,12 +129,10 @@ void bottom_up_step(
                 if (distances[node] == NOT_VISITED_MARKER) {
                     distances[node] = distances[in] + 1;
                     new_frontier.insert(node);
-                    rest.erase(it);
                     break;
                 }
             }
         }
-        it++;
     }
 }
 
@@ -158,7 +154,7 @@ void bfs_bottom_up(Graph graph, solution* sol) {
 
     //vertex_set* frontier = &list;
     std::set<int> frontier;
-    std::set<int> rest;
+    std::set<int> new_frontier;
 
     // initialize all nodes to NOT_VISITED
     //#pragma omp parallel for
@@ -172,14 +168,13 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     frontier.insert(ROOT_NODE_ID);
     sol->distances[ROOT_NODE_ID] = 0;
 
-    /*
     while (frontier.size() != graph->num_nodes) {
 
 #ifdef VERBOSE
         double start_time = CycleTimer::currentSeconds();
 #endif
-        std::set<int> new_frontier;
-        bottom_up_step(graph, rest, frontier, new_frontier, sol->distances);
+        new_frontier.clear();
+        bottom_up_step(graph, frontier, new_frontier, sol->distances);
         if (new_frontier.size() == 0) break;
 
 #ifdef VERBOSE
@@ -192,7 +187,6 @@ void bfs_bottom_up(Graph graph, solution* sol) {
         frontier = new_frontier;
         new_frontier = tmp;
     }
-    */
 }
 
 void bfs_hybrid(Graph graph, solution* sol) {
