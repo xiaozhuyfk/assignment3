@@ -214,11 +214,12 @@ void bfs_hybrid(Graph graph, solution* sol) {
 #endif
 
         vertex_set_clear(new_frontier);
-        if (frontier->count < graph->num_nodes / 4)
+        if (frontier->count < graph->num_nodes / 4) {
             top_down_step(graph, frontier, new_frontier, sol->distances);
             if (new_frontier->count == 0) break;
-        else
+        } else {
             if (!bottom_up_step(graph, distance, sol->distances)) break;
+        }
         distance++;
 
 #ifdef VERBOSE
