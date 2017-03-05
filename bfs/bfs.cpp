@@ -117,22 +117,11 @@ bool bottom_up_step(
         const Vertex* end = incoming_end(g, node);
         for (const Vertex *v = start; v != end; v++) {
             Vertex in = *v;
-            if (distances[in] != distance) continue;
-
             if (distances[in] == distance &&
                     distances[node] == NOT_VISITED_MARKER) {
                 distances[node] = distances[in] + 1;
                 success = true;
                 break;
-                /*
-                if (__sync_bool_compare_and_swap(
-                        &distances[node],
-                        NOT_VISITED_MARKER,
-                        distances[in] + 1)) {
-                    success = true;
-                    break;
-                }
-                */
             }
         }
     }
