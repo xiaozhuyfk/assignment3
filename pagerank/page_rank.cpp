@@ -78,7 +78,7 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
             disjoint_weight += damping * old[disjoint[j]] / numNodes;
         }
 
-        #pragma omp parallel for
+        #pragma omp parallel for schedule(static)
         for (int i = 0; i < numNodes; i++) {
             solution[i] = 0;
             const Vertex* start = incoming_begin(g, i);
