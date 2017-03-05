@@ -171,6 +171,7 @@ void bfs_bottom_up(Graph graph, solution* sol) {
 #endif
         new_frontier.clear();
         bottom_up_step(graph, frontier, new_frontier, sol->distances);
+        printf("New frontier size: %d\n", new_frontier.size());
         if (new_frontier.size() == 0) break;
 
 #ifdef VERBOSE
