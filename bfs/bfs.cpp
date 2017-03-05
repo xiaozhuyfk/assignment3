@@ -124,7 +124,7 @@ void bottom_up_step(
         const Vertex* end = incoming_end(g, node);
         for (const Vertex *v = start; v != end; v++) {
             Vertex in = *v;
-            if (frontier.find(in) != frontier.end()) {
+            if (distances[in] != NOT_VISITED_MARKER) {
                 if (distances[node] == NOT_VISITED_MARKER) {
                     distances[node] = distances[in] + 1;
                     new_frontier.insert(node);
@@ -151,9 +151,17 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     vertex_set list;
     vertex_set_init(&list, graph->num_nodes);
 
+    vertex_set list1;
+    vertex_set list2;
+    vertex_set_init(&list1, graph->num_nodes);
+    vertex_set_init(&list2, graph->num_nodes);
+
+    vertex_set* frontier = &list1;
+    vertex_set* new_frontier = &list2;
+
     //vertex_set* frontier = &list;
-    std::set<int> frontier;
-    std::set<int> new_frontier;
+    //std::set<int> frontier;
+    //std::set<int> new_frontier;
 
     // initialize all nodes to NOT_VISITED
     #pragma omp parallel for
@@ -162,6 +170,7 @@ void bfs_bottom_up(Graph graph, solution* sol) {
 
     // setup frontier with the root node
     frontier.insert(ROOT_NODE_ID);
+    //frontier->vertices[frontier->count++] = ROOT_NODE_ID;
     sol->distances[ROOT_NODE_ID] = 0;
 
     while (frontier.size() != graph->num_nodes) {
