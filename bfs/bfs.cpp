@@ -171,6 +171,7 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     frontier.insert(ROOT_NODE_ID);
     sol->distances[ROOT_NODE_ID] = 0;
 
+    /*
     while (frontier.size() != graph->num_nodes) {
 
 #ifdef VERBOSE
@@ -190,6 +191,7 @@ void bfs_bottom_up(Graph graph, solution* sol) {
         frontier = new_frontier;
         new_frontier = tmp;
     }
+    */
 }
 
 void bfs_hybrid(Graph graph, solution* sol) {
