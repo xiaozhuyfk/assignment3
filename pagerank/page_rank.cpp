@@ -61,7 +61,6 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
     }
 
     std::vector<int> disjoint;
-    #pragma omp parallel for
     for (int i = 0; i < numNodes; i++) {
         if (outgoing_size(g, i) == 0) {
             disjoint.push_back(i);
@@ -101,6 +100,6 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
         }
         converged = (diff < convergence);
     }
+
     free(old);
-    delete(disjoint);
 }
