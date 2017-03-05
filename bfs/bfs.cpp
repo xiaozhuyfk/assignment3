@@ -43,7 +43,15 @@ void top_down_step(
         for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
             int outgoing = g->outgoing_edges[neighbor];
             if (distances[outgoing] != NOT_VISITED_MARKER) continue;
+            if (__sync_bool_compare_and_swap(
+                    &distances[outgoing],
+                    NOT_VISITED_MARKER,
+                    distances[node] + 1)) {
+                int index = __sync_fetch_and_add(&new_frontier->count, 1);
+                new_frontier->vertices[index] = outgoing;
+            }
 
+            /*
             while (true) {
                 bool success = __sync_bool_compare_and_swap(
                         &distances[outgoing],
@@ -55,6 +63,7 @@ void top_down_step(
                 }
                 break;
             }
+            */
         }
     }
 }
@@ -112,7 +121,6 @@ void bottom_up_step(
         int* distances) {
     for (std::set<int>::iterator it = rest.begin(); it != rest.end(); ) {
         int node = *it;
-        if (frontier.find(node) != frontier.end()) continue;
 
         const Vertex* start = incoming_begin(g, node);
         const Vertex* end = incoming_end(g, node);
