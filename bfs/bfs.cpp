@@ -183,6 +183,43 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     }
 }
 
+
+bool hybrid_bottom_up_step(
+        Graph g,
+        int distance,
+        vertex_set *new_frontier,
+        int* distances) {
+
+    bool success = false;
+
+    #pragma omp parallel for
+    for (int i = 0; i < g->num_nodes; i++) {
+        if (distances[i] != NOT_VISITED_MARKER) continue;
+
+        int node = i;
+        const Vertex* start = incoming_begin(g, node);
+        const Vertex* end = incoming_end(g, node);
+        for (const Vertex *v = start; v != end; v++) {
+            Vertex in = *v;
+            if (distances[in] != distance) continue;
+
+            if (distances[in] == distance) {
+                if (__sync_bool_compare_and_swap(
+                        &distances[node],
+                        NOT_VISITED_MARKER,
+                        distances[in] + 1)) {
+                    success = true;
+                    int index = __sync_fetch_and_add(&new_frontier->count, 1);
+                    new_frontier->vertices[index] = node;
+                    break;
+                }
+            }
+        }
+    }
+    return success;
+}
+
+
 void bfs_hybrid(Graph graph, solution* sol) {
     // 15-418/618 students:
     //
@@ -218,7 +255,7 @@ void bfs_hybrid(Graph graph, solution* sol) {
             top_down_step(graph, frontier, new_frontier, sol->distances);
             if (new_frontier->count == 0) break;
         } else {
-            if (!bottom_up_step(graph, distance, sol->distances)) break;
+            if (!hybrid_bottom_up_step(graph, distance, new_frontier, sol->distances)) break;
         }
         distance++;
 
