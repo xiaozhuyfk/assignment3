@@ -119,6 +119,7 @@ bool bottom_up_step(
         int* distances) {
     bool success = false;
     for (int i = 0; i < g->num_nodes; i++) {
+        if (distances[i] != NOT_VISITED_MARKER) continue;
         int node = i;
         const Vertex* start = incoming_begin(g, node);
         const Vertex* end = incoming_end(g, node);
