@@ -183,6 +183,7 @@ void bfs_bottom_up(Graph graph, solution* sol) {
 #endif
         new_frontier.clear();
         if (!bottom_up_step(graph, distance, sol->distances)) break;
+        distance++;
         //printf("New frontier size: %d\n", new_frontier.size());
         //if (new_frontier.size() == 0) break;
 
