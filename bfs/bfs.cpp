@@ -113,26 +113,28 @@ void bfs_top_down(Graph graph, solution* sol) {
     }
 }
 
-void bottom_up_step(
+bool bottom_up_step(
         Graph g,
-        std::set<int> &frontier,
-        std::set<int> &new_frontier,
+        int distance,
         int* distances) {
+    bool success = false;
     for (int i = 0; i < g->num_nodes; i++) {
         int node = i;
         const Vertex* start = incoming_begin(g, node);
         const Vertex* end = incoming_end(g, node);
         for (const Vertex *v = start; v != end; v++) {
             Vertex in = *v;
-            if (distances[in] != NOT_VISITED_MARKER) {
+            if (distances[in] == distance) {
                 if (distances[node] == NOT_VISITED_MARKER) {
                     distances[node] = distances[in] + 1;
-                    new_frontier.insert(node);
+                    //new_frontier.insert(node);
+                    success = true;
                     break;
                 }
             }
         }
     }
+    return success;
 }
 
 void bfs_bottom_up(Graph graph, solution* sol) {
@@ -172,6 +174,7 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     frontier.insert(ROOT_NODE_ID);
     //frontier->vertices[frontier->count++] = ROOT_NODE_ID;
     sol->distances[ROOT_NODE_ID] = 0;
+    int distance = 0;
 
     while (frontier.size() != graph->num_nodes) {
 
@@ -179,9 +182,9 @@ void bfs_bottom_up(Graph graph, solution* sol) {
         double start_time = CycleTimer::currentSeconds();
 #endif
         new_frontier.clear();
-        bottom_up_step(graph, frontier, new_frontier, sol->distances);
-        printf("New frontier size: %d\n", new_frontier.size());
-        if (new_frontier.size() == 0) break;
+        if (!bottom_up_step(graph, distance, sol->distances)) break;
+        //printf("New frontier size: %d\n", new_frontier.size());
+        //if (new_frontier.size() == 0) break;
 
 #ifdef VERBOSE
         double end_time = CycleTimer::currentSeconds();
