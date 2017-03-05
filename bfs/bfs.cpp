@@ -138,14 +138,6 @@ bool bottom_up_step(
                     success = true;
                     break;
                 }
-                /*
-                if (distances[node] == NOT_VISITED_MARKER) {
-                    distances[node] = distances[in] + 1;
-                    //new_frontier.insert(node);
-                    success = true;
-                    break;
-                }
-                */
             }
         }
     }
@@ -165,38 +157,20 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     // code by creating subroutine bottom_up_step() that is called in
     // each step of the BFS process.
 
-    vertex_set list;
-    vertex_set_init(&list, graph->num_nodes);
-
-    vertex_set list1;
-    vertex_set list2;
-    vertex_set_init(&list1, graph->num_nodes);
-    vertex_set_init(&list2, graph->num_nodes);
-
-    //vertex_set* frontier = &list1;
-    //vertex_set* new_frontier = &list2;
-
-    //vertex_set* frontier = &list;
-    std::set<int> frontier;
-    std::set<int> new_frontier;
-
     // initialize all nodes to NOT_VISITED
     #pragma omp parallel for
     for (int i = 0; i < graph->num_nodes; i++)
         sol->distances[i] = NOT_VISITED_MARKER;
 
     // setup frontier with the root node
-    frontier.insert(ROOT_NODE_ID);
-    //frontier->vertices[frontier->count++] = ROOT_NODE_ID;
     sol->distances[ROOT_NODE_ID] = 0;
     int distance = 0;
 
-    while (frontier.size() != graph->num_nodes) {
+    while (true) {
 
 #ifdef VERBOSE
         double start_time = CycleTimer::currentSeconds();
 #endif
-        new_frontier.clear();
         if (!bottom_up_step(graph, distance, sol->distances)) break;
         distance++;
         //printf("New frontier size: %d\n", new_frontier.size());
@@ -206,11 +180,6 @@ void bfs_bottom_up(Graph graph, solution* sol) {
         double end_time = CycleTimer::currentSeconds();
         printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
 #endif
-
-        // swap pointers
-        std::set<int> tmp = frontier;
-        frontier = new_frontier;
-        new_frontier = tmp;
     }
 }
 
