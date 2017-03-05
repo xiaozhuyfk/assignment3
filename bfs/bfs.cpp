@@ -115,8 +115,8 @@ void bfs_top_down(Graph graph, solution* sol) {
 
 void bottom_up_step(
         Graph g,
-        std::set<int> frontier,
-        std::set<int> new_frontier,
+        std::set<int> &frontier,
+        std::set<int> &new_frontier,
         int* distances) {
     for (int i = 0; i < g->num_nodes; i++) {
         int node = i;
