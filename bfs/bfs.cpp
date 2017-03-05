@@ -118,20 +118,34 @@ bool bottom_up_step(
         int distance,
         int* distances) {
     bool success = false;
+
+    #pragma omp parallel for
     for (int i = 0; i < g->num_nodes; i++) {
         if (distances[i] != NOT_VISITED_MARKER) continue;
+
         int node = i;
         const Vertex* start = incoming_begin(g, node);
         const Vertex* end = incoming_end(g, node);
         for (const Vertex *v = start; v != end; v++) {
             Vertex in = *v;
+            if (distances[in] != distance) continue;
+
             if (distances[in] == distance) {
+                if (__sync_bool_compare_and_swap(
+                        &distances[node],
+                        NOT_VISITED_MARKER,
+                        distances[in] + 1)) {
+                    success = true;
+                    break;
+                }
+                /*
                 if (distances[node] == NOT_VISITED_MARKER) {
                     distances[node] = distances[in] + 1;
                     //new_frontier.insert(node);
                     success = true;
                     break;
                 }
+                */
             }
         }
     }
