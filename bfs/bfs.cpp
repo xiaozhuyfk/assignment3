@@ -32,6 +32,8 @@ void top_down_step(
         vertex_set* new_frontier,
         int* distances) {
 
+    int numThreads = omp_get_num_threads();
+
     #pragma omp parallel for
     for (int i = 0; i < frontier->count; i++) {
         int node = frontier->vertices[i];
@@ -117,7 +119,12 @@ bool bottom_up_step(
             Vertex in = *v;
             if (distances[in] != distance) continue;
 
-            if (distances[in] == distance) {
+            if (distances[in] == distance &&
+                    distances[node] == NOT_VISITED_MARKER) {
+                distances[node] = distances[in] + 1;
+                success = true;
+                break;
+                /*
                 if (__sync_bool_compare_and_swap(
                         &distances[node],
                         NOT_VISITED_MARKER,
@@ -125,6 +132,7 @@ bool bottom_up_step(
                     success = true;
                     break;
                 }
+                */
             }
         }
     }
