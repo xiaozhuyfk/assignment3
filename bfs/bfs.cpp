@@ -40,7 +40,7 @@ void top_down_step(
                 g->num_edges : g->outgoing_starts[node + 1];
 
         // attempt to add all neighbors to the new frontier
-        #pragma omp parallel for nowait
+        #pragma omp for nowait
         for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
             int outgoing = g->outgoing_edges[neighbor];
             if (distances[outgoing] != NOT_VISITED_MARKER) continue;
