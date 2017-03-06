@@ -57,7 +57,7 @@ void top_down_step(
     */
 
     int num_threads = omp_get_num_threads();
-    int *dist_frontier = malloc(sizeof(int) * num_threads * g->num_nodes);
+    int *dist_frontier = (int *) malloc(sizeof(int) * num_threads * g->num_nodes);
     int frontier_size[num_threads];
     memset(frontier_size, 0, num_threads * sizeof(int));
 
@@ -92,6 +92,8 @@ void top_down_step(
                 sizeof(int) * count);
         new_frontier->count += count;
     }
+
+    free(dist_frontier);
 }
 
 // Implements top-down BFS.
