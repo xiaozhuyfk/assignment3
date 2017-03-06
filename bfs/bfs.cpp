@@ -160,7 +160,7 @@ bool bottom_up_step(
             const Vertex* end = incoming_end(g, node);
             for (const Vertex *v = start; v != end; v++) {
                 Vertex in = *v;
-                if (distances[in] == distance && distances[node] == NOT_VISITED_MARKER) {
+                if (distances[in] == distance) {
                     distances[node] = distances[in] + 1;
                     success = true;
                     break;
