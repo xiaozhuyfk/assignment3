@@ -57,6 +57,7 @@ void top_down_step(
     */
 
     int num_threads = omp_get_num_threads();
+    printf("%d\n", num_threads);
     int *dist_frontier = (int *) malloc(sizeof(int) * num_threads * g->num_nodes);
     int frontier_size[num_threads];
     memset(frontier_size, 0, num_threads * sizeof(int));
@@ -151,6 +152,7 @@ bool bottom_up_step(
         int* distances) {
 
     bool success = false;
+    int num_threads = omp_get_num_threads();
 
     #pragma omp parallel for schedule(dynamic, 1000)
     for (int i = 0; i < g->num_nodes; i++) {
