@@ -201,7 +201,7 @@ void hybrid_bottom_up_step(
 
     for (int node = 0; node < g->num_nodes; node++) {
         if (distances[node] == distance + 1) {
-            new_frontier[new_frontier->count++] = node;
+            new_frontier->vertices[new_frontier->count++] = node;
         }
     }
 
