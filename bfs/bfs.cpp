@@ -188,7 +188,6 @@ void bfs_bottom_up(Graph graph, solution* sol) {
         double start_time = CycleTimer::currentSeconds();
 #endif
 
-        vertex_set_clear(new_frontier);
         if (bottom_up_step(graph, distance, sol->distances) == 0) break;
         distance++;
 
