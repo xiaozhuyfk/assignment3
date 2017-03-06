@@ -57,7 +57,7 @@ void top_down_step(
     */
 
     int num_threads = omp_get_num_threads();
-    int dist_frontier[num_threads][g->num_nodes];
+    int *dist_frontier = malloc(sizeof(int) * num_threads * g->num_nodes);
     int frontier_size[num_threads];
     memset(frontier_size, 0, num_threads * sizeof(int));
 
@@ -78,16 +78,17 @@ void top_down_step(
                         &distances[outgoing],
                         NOT_VISITED_MARKER,
                         distances[node] + 1)) {
-                    dist_frontier[i][frontier_size[i]++] = outgoing;
+                    dist_frontier[i * g->num_nodes + (frontier_size[i]++)] = outgoing;
                 }
             }
         }
     }
 
+    #pragma omp critical
     for (int i = 0; i < num_threads; i++) {
         int count = frontier_size[i];
         memcpy(new_frontier->vertices + new_frontier->count,
-                dist_frontier[i],
+                &dist_frontier[i * g->num_nodes],
                 sizeof(int) * count);
         new_frontier->count += count;
     }
