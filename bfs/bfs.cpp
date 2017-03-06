@@ -150,11 +150,12 @@ void bfs_top_down(Graph graph, solution* sol) {
     }
 }
 
-bool bottom_up_step(
+int bottom_up_step(
         Graph g,
         int distance,
         int* distances) {
 
+    /*
     bool success = false;
     int num_threads = omp_get_max_threads();
     int check[num_threads];
@@ -177,6 +178,41 @@ bool bottom_up_step(
         }
     }
     return success;
+    */
+
+    int num_threads = omp_get_max_threads();
+    int frontier_size[num_threads];
+    memset(frontier_size, 0, num_threads * sizeof(int));
+
+    #pragma omp parallel
+    {
+        int i = omp_get_thread_num();
+
+        for (int block = 0; block < g->num_nodes; block += num_threads) {
+            if (block + i >= g->num_nodes) break;
+            if (distances[block + i] != NOT_VISITED_MARKER) continue;
+
+            int node = block + i;
+            const Vertex* start = incoming_begin(g, node);
+            const Vertex* end = incoming_end(g, node);
+            for (const Vertex *v = start; v != end; v++) {
+                Vertex in = *v;
+                if (distances[in] == distance) {
+                    distances[node] = distances[in] + 1;
+                    frontier_size[i]++;
+                }
+            }
+        }
+    }
+
+    int sum = 0;
+    #pragma omp for reduction(+:sum)
+    for (int i = 0; i < num_threads; i++) {
+        int count = frontier_size[i];
+        sum += count;
+    }
+
+    return sum;
 }
 
 void hybrid_bottom_up_step(
@@ -266,14 +302,14 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     sol->distances[ROOT_NODE_ID] = 0;
     int distance = 0;
 
-    while (frontier->count != 0) {
+    while (true) {
 
 #ifdef VERBOSE
         double start_time = CycleTimer::currentSeconds();
 #endif
 
         vertex_set_clear(new_frontier);
-        hybrid_bottom_up_step(graph, distance, new_frontier, sol->distances);
+        if (bottom_up_step(graph, distance, sol->distances) == 0) break;
         distance++;
 
 #ifdef VERBOSE
