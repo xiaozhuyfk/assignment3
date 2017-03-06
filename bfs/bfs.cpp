@@ -33,13 +33,6 @@ void top_down_step(
         vertex_set* new_frontier,
         int* distances) {
 
-    int num_threads = omp_get_num_threads();
-    std::vector<std::set<int>> dist_frontier;
-    for (int i = 0; i < num_threads; i++) {
-        dist_frontier.push_back(std::set<int>());
-    }
-
-    /*
     #pragma omp parallel for
     for (int i = 0; i < frontier->count; i++) {
         int node = frontier->vertices[i];
@@ -60,7 +53,13 @@ void top_down_step(
             }
         }
     }
-    */
+
+    /*
+    int num_threads = omp_get_num_threads();
+    std::vector<std::set<int>> dist_frontier;
+    for (int i = 0; i < num_threads; i++) {
+        dist_frontier.push_back(std::set<int>());
+    }
 
     #pragma omp parallel for
     for (int block = 0; block < frontier->count; block += num_threads) {
@@ -92,6 +91,7 @@ void top_down_step(
     std::vector<int> list = std::vector<int>(total.begin(), total.end());
     new_frontier->count = list.size();
     memcpy(new_frontier->vertices, (int *) &list[0], list.size() * sizeof(int));
+    */
 }
 
 // Implements top-down BFS.
@@ -145,7 +145,7 @@ bool bottom_up_step(
 
     bool success = false;
 
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < g->num_nodes; i++) {
         if (distances[i] != NOT_VISITED_MARKER) continue;
 
