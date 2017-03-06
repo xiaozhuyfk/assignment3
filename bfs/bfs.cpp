@@ -61,8 +61,9 @@ void top_down_step(
     int frontier_size[num_threads];
     memset(frontier_size, 0, num_threads * sizeof(int));
 
-    #pragma omp parallel for
+
     for (int block = 0; block < frontier->count; block += num_threads) {
+        #pragma omp parallel for
         for (int i = 0; i < num_threads; i++) {
             if (block + i >= frontier->count) break;
             int node = frontier->vertices[block + i];
@@ -79,13 +80,14 @@ void top_down_step(
                         &distances[outgoing],
                         NOT_VISITED_MARKER,
                         distances[node] + 1)) {
-                    dist_frontier[i * g->num_nodes + (frontier_size[i]++)] = outgoing;
+                    int index = frontier_size[i]++;
+                    dist_frontier[i * g->num_nodes + index] = outgoing;
                 }
             }
         }
     }
 
-    //#pragma omp critical
+    #pragma omp critical
     for (int i = 0; i < num_threads; i++) {
         int count = frontier_size[i];
         memcpy(new_frontier->vertices + new_frontier->count,
@@ -112,6 +114,7 @@ void bfs_top_down(Graph graph, solution* sol) {
     vertex_set* new_frontier = &list2;
 
     // initialize all nodes to NOT_VISITED
+    #pragma omp parallel for
     for (int i = 0; i < graph->num_nodes; i++)
         sol->distances[i] = NOT_VISITED_MARKER;
 
