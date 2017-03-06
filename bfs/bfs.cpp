@@ -34,10 +34,9 @@ void top_down_step(
         int* distances) {
 
     int num_threads = omp_get_num_threads();
-    std::set<int> *dist_frontier = malloc(sizeof(std::set<int>) * num_threads);
+    std::vector<std::set<int>> dist_frontier;
     for (int i = 0; i < num_threads; i++) {
-        std::set<int> *set = malloc(sizeof(std::set<int>));
-        dist_frontier[i] = set;
+        dist_frontier.push_back(std::set<int>());
     }
 
     /*
@@ -93,8 +92,6 @@ void top_down_step(
     std::vector<int> list = std::vector<int>(total.begin(), total.end());
     new_frontier->count = list.size();
     memcpy(new_frontier->vertices, (int *) &list[0], list.size() * sizeof(int));
-
-    free(dist_frontier);
 }
 
 // Implements top-down BFS.
