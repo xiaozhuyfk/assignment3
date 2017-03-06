@@ -76,16 +76,13 @@ void top_down_step(
         */
     }
 
-    int sum = 0;
-    //#pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < num_threads; i++) {
         int count = frontier_size[i];
-        memcpy(new_frontier->vertices + sum,
+        memcpy(new_frontier->vertices + new_frontier->count,
                 dist_frontier[i],
                 sizeof(int) * count);
-        sum += count;
+        new_frontier->count += count;
     }
-    new_frontier->count = sum;
 
     #pragma omp parallel for
     for (int i = 0; i < num_threads; i++) {
