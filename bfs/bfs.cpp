@@ -68,7 +68,6 @@ void top_down_step(
 
         #pragma omp for
         for (int idx = 0; idx < frontier->count; idx++) {
-            //if (block + i < frontier->count) {
             int node = frontier->vertices[idx];
             int start_edge = g->outgoing_starts[node];
             int end_edge = (node == g->num_nodes - 1) ?
@@ -86,20 +85,9 @@ void top_down_step(
                     dist_frontier[i][frontier_size[i]++] = outgoing;
                 }
             }
-            //}
-        }
-
-        #pragma omp critical
-        {
-            int count = frontier_size[i];
-            memcpy(new_frontier->vertices + new_frontier->count,
-                    dist_frontier[i],
-                    sizeof(int) * count);
-            new_frontier->count += count;
         }
     }
 
-    /*
     for (int i = 0; i < num_threads; i++) {
         int count = frontier_size[i];
         memcpy(new_frontier->vertices + new_frontier->count,
@@ -107,7 +95,6 @@ void top_down_step(
                 sizeof(int) * count);
         new_frontier->count += count;
     }
-    */
 
     #pragma omp parallel for
     for (int i = 0; i < num_threads; i++) {
@@ -264,19 +251,8 @@ void hybrid_bottom_up_step(
                 }
             }
         }
-
-        #pragma omp critcal
-        {
-            int count = frontier_size[i];
-            memcpy(new_frontier->vertices + new_frontier->count,
-                    dist_frontier[i],
-                    sizeof(int) * count);
-            new_frontier->count += count;
-        }
     }
 
-    /*
-    #pragma omp critical
     for (int i = 0; i < num_threads; i++) {
         int count = frontier_size[i];
         memcpy(new_frontier->vertices + new_frontier->count,
@@ -284,7 +260,6 @@ void hybrid_bottom_up_step(
                 sizeof(int) * count);
         new_frontier->count += count;
     }
-    */
 
     #pragma omp parallel for
     for (int i = 0; i < num_threads; i++) {
