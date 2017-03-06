@@ -193,17 +193,21 @@ void hybrid_bottom_up_step(
                 Vertex in = *v;
                 if (distances[in] == distance) {
                     distances[node] = distances[in] + 1;
+                    int index = __sync_fetch_and_add(&new_frontier->count, 1);
+                    new_frontier->vertices[index] = node;
                     break;
                 }
             }
         }
     }
 
+    /*
     for (int node = 0; node < g->num_nodes; node++) {
         if (distances[node] == distance + 1) {
             new_frontier->vertices[new_frontier->count++] = node;
         }
     }
+    */
 
     /*
     int num_threads = omp_get_max_threads();
