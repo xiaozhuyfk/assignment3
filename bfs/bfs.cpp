@@ -74,6 +74,7 @@ void top_down_step(
             for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
                 int outgoing = g->outgoing_edges[neighbor];
                 if (distances[outgoing] != NOT_VISITED_MARKER) continue;
+
                 if (__sync_bool_compare_and_swap(
                         &distances[outgoing],
                         NOT_VISITED_MARKER,
@@ -84,12 +85,12 @@ void top_down_step(
         }
     }
 
-    #pragma omp critical
+    //#pragma omp critical
     for (int i = 0; i < num_threads; i++) {
         int count = frontier_size[i];
         memcpy(new_frontier->vertices + new_frontier->count,
                 &dist_frontier[i * g->num_nodes],
-                sizeof(int) * count);
+                count);
         new_frontier->count += count;
     }
 
