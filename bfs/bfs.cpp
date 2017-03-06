@@ -57,14 +57,17 @@ void top_down_step(
     */
 
     int num_threads = omp_get_max_threads();
-    int *dist_frontier = (int *) malloc(sizeof(int) * num_threads * g->num_nodes);
+    int **dist_frontier = (int **) malloc(sizeof(int *) * num_threads);
     int frontier_size[num_threads];
     memset(frontier_size, 0, num_threads * sizeof(int));
 
 
-    #pragma omp parallel for
-    for (int block = 0; block < frontier->count; block += num_threads) {
-        for (int i = 0; i < num_threads; i++) {
+    #pragma omp parallel
+    {
+        dist_frontier[omp_get_thread_num()] = (int *) malloc(sizeof(int) * g->num_nodes);
+        #pragma omp for
+        for (int block = 0; block < frontier->count; block += num_threads) {
+            int i = omp_get_thread_num();
             if (block + i < frontier->count) {
                 int node = frontier->vertices[block + i];
                 int start_edge = g->outgoing_starts[node];
@@ -80,8 +83,7 @@ void top_down_step(
                             &distances[outgoing],
                             NOT_VISITED_MARKER,
                             distances[node] + 1)) {
-                        int index = __sync_fetch_and_add(&frontier_size[i], 1);
-                        dist_frontier[i * g->num_nodes + index] = outgoing;
+                        dist_frontier[i][frontier_size[i]++] = outgoing;
                     }
                 }
             }
@@ -97,6 +99,10 @@ void top_down_step(
         new_frontier->count += count;
     }
 
+    #pragma omp parallel for
+    for (int i = 0; i < num_threads; i++) {
+        free(dist_frontier[i]);
+    }
     free(dist_frontier);
 }
 
