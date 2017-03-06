@@ -64,6 +64,7 @@ void top_down_step(
             }
         }
 
+        /*
         #pragma omp critical
         {
             int count = frontier_size[i];
@@ -72,17 +73,19 @@ void top_down_step(
                     sizeof(int) * count);
             new_frontier->count += count;
         }
+        */
     }
 
-    /*
+    int sum = 0;
+    #pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < num_threads; i++) {
         int count = frontier_size[i];
-        memcpy(new_frontier->vertices + new_frontier->count,
+        memcpy(new_frontier->vertices + sum,
                 dist_frontier[i],
                 sizeof(int) * count);
-        new_frontier->count += count;
+        sum += count;
     }
-    */
+    new_frontier->count = sum;
 
     #pragma omp parallel for
     for (int i = 0; i < num_threads; i++) {
