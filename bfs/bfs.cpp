@@ -329,6 +329,7 @@ void bfs_hybrid(Graph graph, solution* sol) {
     sol->distances[ROOT_NODE_ID] = 0;
     int distance = 0;
 
+    bool top_down = true;
     while (frontier->count != 0) {
 
 #ifdef VERBOSE
@@ -337,9 +338,19 @@ void bfs_hybrid(Graph graph, solution* sol) {
 
         vertex_set_clear(new_frontier);
         if (frontier->count < 1000000) {
+            if (!top_down) {
+                vertex_set_clear(frontier);
+                for (int i = 0; i < graph->num_nodes; i++) {
+                    if (sol->distances[i] == distance) {
+                        frontier->vertices[frontier->count++] = i;
+                    }
+                }
+            }
             top_down_step(graph, frontier, new_frontier, sol->distances);
+            top_down = true;
         } else {
             hybrid_bottom_up_step(graph, distance, new_frontier, sol->distances);
+            top_down = false;
         }
         distance++;
 
