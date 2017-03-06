@@ -198,8 +198,6 @@ void hybrid_bottom_up_step(
                 const Vertex* end = incoming_end(g, node);
                 for (const Vertex *v = start; v != end; v++) {
                     Vertex in = *v;
-                    if (distances[in] != distance) continue;
-
                     if (distances[in] == distance) {
                         /*
                         if (__sync_bool_compare_and_swap(
@@ -216,6 +214,8 @@ void hybrid_bottom_up_step(
             }
         }
     }
+
+    printf("after parallel\n");
 
     for (int i = 0; i < num_threads; i++) {
         int count = frontier_size[i];
