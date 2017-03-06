@@ -64,7 +64,6 @@ void top_down_step(
             }
         }
 
-        /*
         #pragma omp critical
         {
             int count = frontier_size[i];
@@ -73,9 +72,9 @@ void top_down_step(
                     sizeof(int) * count);
             new_frontier->count += count;
         }
-        */
     }
 
+    /*
     for (int i = 0; i < num_threads; i++) {
         int count = frontier_size[i];
         memcpy(new_frontier->vertices + new_frontier->count,
@@ -83,6 +82,7 @@ void top_down_step(
                 sizeof(int) * count);
         new_frontier->count += count;
     }
+    */
 
     #pragma omp parallel for
     for (int i = 0; i < num_threads; i++) {
@@ -182,6 +182,30 @@ void hybrid_bottom_up_step(
         vertex_set *new_frontier,
         int* distances) {
 
+    bool success = false;
+
+    #pragma omp parallel for schedule(static)
+    for (int node = 0; node < g->num_nodes; node++) {
+        if (distances[node] == NOT_VISITED_MARKER) {
+            const Vertex* start = incoming_begin(g, node);
+            const Vertex* end = incoming_end(g, node);
+            for (const Vertex *v = start; v != end; v++) {
+                Vertex in = *v;
+                if (distances[in] == distance) {
+                    distances[node] = distances[in] + 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    for (int node = 0; node < g->num_nodes; node++) {
+        if (distances[node] == distance + 1) {
+            new_frontier[new_frontier->count++] = node;
+        }
+    }
+
+    /*
     int num_threads = omp_get_max_threads();
     int **dist_frontier = (int **) malloc(sizeof(int *) * num_threads);
     int frontier_size[num_threads];
@@ -222,6 +246,7 @@ void hybrid_bottom_up_step(
         free(dist_frontier[i]);
     }
     free(dist_frontier);
+    */
 }
 
 void bfs_bottom_up(Graph graph, solution* sol) {
@@ -255,14 +280,14 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     sol->distances[ROOT_NODE_ID] = 0;
     int distance = 0;
 
-    while (true) {
+    while (frontier->count != 0) {
 
 #ifdef VERBOSE
         double start_time = CycleTimer::currentSeconds();
 #endif
 
         vertex_set_clear(new_frontier);
-        if (bottom_up_step(graph, distance, sol->distances) == 0) break;
+        hybrid_bottom_up_step(graph, distance, new_frontier, sol->distances);
         distance++;
 
 #ifdef VERBOSE
