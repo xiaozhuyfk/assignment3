@@ -65,23 +65,25 @@ void top_down_step(
     for (int block = 0; block < frontier->count; block += num_threads) {
 
         #pragma omp parallel for if
-        for (int i = 0; i < num_threads && block + i < frontier->count; i++) {
-            int node = frontier->vertices[block + i];
-            int start_edge = g->outgoing_starts[node];
-            int end_edge = (node == g->num_nodes - 1) ?
-                    g->num_edges : g->outgoing_starts[node + 1];
+        for (int i = 0; i < num_threads; i++) {
+            if (block + i < frontier->count) {
+                int node = frontier->vertices[block + i];
+                int start_edge = g->outgoing_starts[node];
+                int end_edge = (node == g->num_nodes - 1) ?
+                        g->num_edges : g->outgoing_starts[node + 1];
 
-            // attempt to add all neighbors to the new frontier
-            for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
-                int outgoing = g->outgoing_edges[neighbor];
-                if (distances[outgoing] != NOT_VISITED_MARKER) continue;
+                // attempt to add all neighbors to the new frontier
+                for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
+                    int outgoing = g->outgoing_edges[neighbor];
+                    if (distances[outgoing] != NOT_VISITED_MARKER) continue;
 
-                if (__sync_bool_compare_and_swap(
-                        &distances[outgoing],
-                        NOT_VISITED_MARKER,
-                        distances[node] + 1)) {
-                    int index = frontier_size[i]++;
-                    dist_frontier[i * g->num_nodes + index] = outgoing;
+                    if (__sync_bool_compare_and_swap(
+                            &distances[outgoing],
+                            NOT_VISITED_MARKER,
+                            distances[node] + 1)) {
+                        int index = frontier_size[i]++;
+                        dist_frontier[i * g->num_nodes + index] = outgoing;
+                    }
                 }
             }
         }
