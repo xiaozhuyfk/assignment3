@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <omp.h>
 #include <set>
+#include <vector>
 
 #include "../common/CycleTimer.h"
 #include "../common/graph.h"
@@ -32,8 +33,14 @@ void top_down_step(
         vertex_set* new_frontier,
         int* distances) {
 
-    int numThreads = omp_get_num_threads();
+    int num_threads = omp_get_num_threads();
+    std::set<int> *dist_frontier = malloc(sizeof(std::set<int>) * num_threads);
+    for (int i = 0; i < num_threads; i++) {
+        std::set<int> *set = malloc(sizeof(std::set<int>));
+        dist_frontier[i] = set;
+    }
 
+    /*
     #pragma omp parallel for
     for (int i = 0; i < frontier->count; i++) {
         int node = frontier->vertices[i];
@@ -54,6 +61,40 @@ void top_down_step(
             }
         }
     }
+    */
+
+    #pragma omp parallel for
+    for (int block = 0; block < frontier->count; block += num_threads) {
+        for (int i = 0; i < num_threads; i++) {
+            if (block + i >= frontier->count) break;
+            int node = frontier->vertices[block + i];
+            int start_edge = g->outgoing_starts[node];
+            int end_edge = (node == g->num_nodes - 1) ?
+                    g->num_edges : g->outgoing_starts[node + 1];
+
+            // attempt to add all neighbors to the new frontier
+            for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
+                int outgoing = g->outgoing_edges[neighbor];
+                if (distances[outgoing] != NOT_VISITED_MARKER) continue;
+                if (__sync_bool_compare_and_swap(
+                        &distances[outgoing],
+                        NOT_VISITED_MARKER,
+                        distances[node] + 1)) {
+                    dist_frontier[i].insert(outgoing);
+                }
+            }
+        }
+    }
+
+    std::set<int> total;
+    for (int i = 0; i < num_threads; i++) {
+        total.insert(dist_frontier[i].begin(), dist_frontier[i].end());
+    }
+    std::vector<int> list = std::vector<int>(total.begin(), total.end());
+    new_frontier->count = list.size();
+    memcpy(new_frontier->vertices, (int *) &list[0], list.size() * sizeof(int));
+
+    free(dist_frontier);
 }
 
 // Implements top-down BFS.
