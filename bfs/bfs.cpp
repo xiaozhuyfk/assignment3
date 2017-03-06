@@ -63,9 +63,9 @@ void top_down_step(
 
 
     for (int block = 0; block < frontier->count; block += num_threads) {
-        #pragma omp parallel for
-        for (int i = 0; i < num_threads; i++) {
-            if (block + i >= frontier->count) break;
+
+        #pragma omp parallel for if
+        for (int i = 0; i < num_threads && block + i < frontier->count; i++) {
             int node = frontier->vertices[block + i];
             int start_edge = g->outgoing_starts[node];
             int end_edge = (node == g->num_nodes - 1) ?
