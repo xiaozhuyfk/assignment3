@@ -184,10 +184,11 @@ int bottom_up_step(
     int frontier_size[num_threads];
     memset(frontier_size, 0, num_threads * sizeof(int));
 
-    #pragma omp parallel schedule(static)
+    #pragma omp parallel
     {
         int i = omp_get_thread_num();
 
+        #pragma omp for schedule(static)
         for (int block = 0; block < g->num_nodes; block += num_threads) {
             if (block + i >= g->num_nodes) break;
             if (distances[block + i] != NOT_VISITED_MARKER) continue;
@@ -199,7 +200,7 @@ int bottom_up_step(
                 Vertex in = *v;
                 if (distances[in] == distance) {
                     distances[node] = distances[in] + 1;
-                    frontier_size[i]++;
+                    __sync_fetch_and_add(&frontier_size[i], 1)
                     break;
                 }
             }
