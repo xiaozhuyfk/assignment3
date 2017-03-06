@@ -90,7 +90,7 @@ void top_down_step(
         int count = frontier_size[i];
         memcpy(new_frontier->vertices + new_frontier->count,
                 &dist_frontier[i * g->num_nodes],
-                count);
+                sizeof(int) * count);
         new_frontier->count += count;
     }
 
