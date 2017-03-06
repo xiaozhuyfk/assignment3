@@ -67,10 +67,9 @@ void top_down_step(
         dist_frontier[i] = (int *) malloc(sizeof(int) * g->num_nodes);
 
         #pragma omp for
-        for (int node = 0; node < frontier->count; node++) {
-            i = omp_get_thread_num();
+        for (int idx = 0; idx < frontier->count; idx++) {
             //if (block + i < frontier->count) {
-            //int node = frontier->vertices[block + i];
+            int node = frontier->vertices[idx];
             int start_edge = g->outgoing_starts[node];
             int end_edge = (node == g->num_nodes - 1) ?
                     g->num_edges : g->outgoing_starts[node + 1];
