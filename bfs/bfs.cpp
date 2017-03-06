@@ -66,26 +66,27 @@ void top_down_step(
         int i = omp_get_thread_num();
         dist_frontier[i] = (int *) malloc(sizeof(int) * g->num_nodes);
 
-        for (int block = 0; block < frontier->count; block += num_threads) {
-            if (block + i < frontier->count) {
-                int node = frontier->vertices[block + i];
-                int start_edge = g->outgoing_starts[node];
-                int end_edge = (node == g->num_nodes - 1) ?
-                        g->num_edges : g->outgoing_starts[node + 1];
+        #pragma omp for
+        for (int node = 0; node < frontier->count; node ++) {
+            //if (block + i < frontier->count) {
+            //int node = frontier->vertices[block + i];
+            int start_edge = g->outgoing_starts[node];
+            int end_edge = (node == g->num_nodes - 1) ?
+                    g->num_edges : g->outgoing_starts[node + 1];
 
-                // attempt to add all neighbors to the new frontier
-                for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
-                    int outgoing = g->outgoing_edges[neighbor];
-                    if (distances[outgoing] != NOT_VISITED_MARKER) continue;
+            // attempt to add all neighbors to the new frontier
+            for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
+                int outgoing = g->outgoing_edges[neighbor];
+                if (distances[outgoing] != NOT_VISITED_MARKER) continue;
 
-                    if (__sync_bool_compare_and_swap(
-                            &distances[outgoing],
-                            NOT_VISITED_MARKER,
-                            distances[node] + 1)) {
-                        dist_frontier[i][frontier_size[i]++] = outgoing;
-                    }
+                if (__sync_bool_compare_and_swap(
+                        &distances[outgoing],
+                        NOT_VISITED_MARKER,
+                        distances[node] + 1)) {
+                    dist_frontier[i][frontier_size[i]++] = outgoing;
                 }
             }
+            //}
         }
     }
 
@@ -189,17 +190,16 @@ int bottom_up_step(
         int i = omp_get_thread_num();
 
         #pragma omp for schedule(static)
-        for (int block = 0; block < g->num_nodes; block += num_threads) {
-            int node = block + i;
-            if (node < g->num_nodes && distances[node] == NOT_VISITED_MARKER) {
+        for (int node = 0; node < g->num_nodes; node++) {
+            if (distances[node] == NOT_VISITED_MARKER) {
                 const Vertex* start = incoming_begin(g, node);
                 const Vertex* end = incoming_end(g, node);
                 for (const Vertex *v = start; v != end; v++) {
                     Vertex in = *v;
                     if (distances[in] == distance) {
                         distances[node] = distances[in] + 1;
-                        __sync_fetch_and_add(&frontier_size[i], 1);
-                        //frontier_size[i]++;
+                        //__sync_fetch_and_add(&frontier_size[i], 1);
+                        frontier_size[i]++;
                         break;
                     }
                 }
@@ -233,24 +233,23 @@ void hybrid_bottom_up_step(
         int i = omp_get_thread_num();
         dist_frontier[i] = (int *) malloc(sizeof(int) * g->num_nodes);
 
-        for (int block = 0; block < g->num_nodes; block += num_threads) {
-            if (block + i >= g->num_nodes) break;
-            if (distances[block + i] != NOT_VISITED_MARKER) continue;
+        #pragma omp for schedule(static)
+        for (int node = 0; node < g->num_nodes; node++) {
+            if (distances[node] == NOT_VISITED_MARKER) {
+                const Vertex* start = incoming_begin(g, node);
+                const Vertex* end = incoming_end(g, node);
+                for (const Vertex *v = start; v != end; v++) {
+                    Vertex in = *v;
+                    if (distances[in] != distance) continue;
 
-            int node = block + i;
-            const Vertex* start = incoming_begin(g, node);
-            const Vertex* end = incoming_end(g, node);
-            for (const Vertex *v = start; v != end; v++) {
-                Vertex in = *v;
-                if (distances[in] != distance) continue;
-
-                if (distances[in] == distance) {
-                    if (__sync_bool_compare_and_swap(
-                            &distances[node],
-                            NOT_VISITED_MARKER,
-                            distances[in] + 1)) {
-                        dist_frontier[i][frontier_size[i]++] = node;
-                        break;
+                    if (distances[in] == distance) {
+                        if (__sync_bool_compare_and_swap(
+                                &distances[node],
+                                NOT_VISITED_MARKER,
+                                distances[in] + 1)) {
+                            dist_frontier[i][frontier_size[i]++] = node;
+                            break;
+                        }
                     }
                 }
             }
