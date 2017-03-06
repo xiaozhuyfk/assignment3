@@ -33,29 +33,6 @@ void top_down_step(
         vertex_set* new_frontier,
         int* distances) {
 
-    /*
-    #pragma omp parallel for
-    for (int i = 0; i < frontier->count; i++) {
-        int node = frontier->vertices[i];
-        int start_edge = g->outgoing_starts[node];
-        int end_edge = (node == g->num_nodes - 1) ?
-                g->num_edges : g->outgoing_starts[node + 1];
-
-        // attempt to add all neighbors to the new frontier
-        for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
-            int outgoing = g->outgoing_edges[neighbor];
-            if (distances[outgoing] != NOT_VISITED_MARKER) continue;
-            if (__sync_bool_compare_and_swap(
-                    &distances[outgoing],
-                    NOT_VISITED_MARKER,
-                    distances[node] + 1)) {
-                int index = __sync_fetch_and_add(&new_frontier->count, 1);
-                new_frontier->vertices[index] = outgoing;
-            }
-        }
-    }
-    */
-
     int num_threads = omp_get_max_threads();
     int **dist_frontier = (int **) malloc(sizeof(int *) * num_threads);
     int frontier_size[num_threads];
@@ -86,8 +63,18 @@ void top_down_step(
                 }
             }
         }
+
+        #pragma omp critical
+        {
+            int count = frontier_size[i];
+            memcpy(new_frontier->vertices + new_frontier->count,
+                    dist_frontier[i],
+                    sizeof(int) * count);
+            new_frontier->count += count;
+        }
     }
 
+    /*
     for (int i = 0; i < num_threads; i++) {
         int count = frontier_size[i];
         memcpy(new_frontier->vertices + new_frontier->count,
@@ -95,6 +82,7 @@ void top_down_step(
                 sizeof(int) * count);
         new_frontier->count += count;
     }
+    */
 
     #pragma omp parallel for
     for (int i = 0; i < num_threads; i++) {
@@ -153,31 +141,6 @@ int bottom_up_step(
         int distance,
         int* distances) {
 
-    /*
-    bool success = false;
-    int num_threads = omp_get_max_threads();
-    int check[num_threads];
-    memset(check, 0, num_threads * sizeof(int));
-
-    #pragma omp parallel for schedule(dynamic, 1000)
-    for (int i = 0; i < g->num_nodes; i++) {
-        if (distances[i] == NOT_VISITED_MARKER) {
-            int node = i;
-            const Vertex* start = incoming_begin(g, node);
-            const Vertex* end = incoming_end(g, node);
-            for (const Vertex *v = start; v != end; v++) {
-                Vertex in = *v;
-                if (distances[in] == distance) {
-                    distances[node] = distances[in] + 1;
-                    success = true;
-                    break;
-                }
-            }
-        }
-    }
-    return success;
-    */
-
     int num_threads = omp_get_max_threads();
     int frontier_size[num_threads];
     memset(frontier_size, 0, num_threads * sizeof(int));
@@ -195,7 +158,6 @@ int bottom_up_step(
                     Vertex in = *v;
                     if (distances[in] == distance) {
                         distances[node] = distances[in] + 1;
-                        //__sync_fetch_and_add(&frontier_size[i], 1);
                         frontier_size[i]++;
                         break;
                     }
