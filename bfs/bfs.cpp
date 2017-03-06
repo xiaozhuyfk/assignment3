@@ -159,7 +159,6 @@ int bottom_up_step(
                     if (distances[in] == distance) {
                         distances[node] = distances[in] + 1;
                         frontier_size[i]++;
-                        return 1;
                     }
                 }
             }
