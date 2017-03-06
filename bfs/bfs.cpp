@@ -159,6 +159,7 @@ int bottom_up_step(
                     if (distances[in] == distance) {
                         distances[node] = distance + 1;
                         frontier_size[i]++;
+                        break;
                     }
                 }
             }
@@ -199,14 +200,6 @@ void hybrid_bottom_up_step(
                 for (const Vertex *v = start; v != end; v++) {
                     Vertex in = *v;
                     if (distances[in] == distance) {
-                        /*
-                        if (__sync_bool_compare_and_swap(
-                                &distances[node],
-                                NOT_VISITED_MARKER,
-                                distances[in] + 1)) {
-                            dist_frontier[i][frontier_size[i]++] = node;
-                        }
-                        */
                         distances[node] = distance + 1;
                         dist_frontier[i][frontier_size[i]++] = node;
                         break;
