@@ -185,7 +185,7 @@ bool hybrid_bottom_up_step(
 
     bool success = false;
 
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static, 1000)
     for (int node = 0; node < g->num_nodes; node++) {
         if (distances[node] == NOT_VISITED_MARKER) {
             const Vertex* start = incoming_begin(g, node);
