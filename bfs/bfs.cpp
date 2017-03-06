@@ -206,7 +206,7 @@ int bottom_up_step(
     }
 
     int sum = 0;
-    #pragma omp for reduction(+:sum)
+    #pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < num_threads; i++) {
         int count = frontier_size[i];
         sum += count;
