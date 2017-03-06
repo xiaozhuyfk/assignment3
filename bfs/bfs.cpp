@@ -176,14 +176,13 @@ int bottom_up_step(
     return sum;
 }
 
-void hybrid_bottom_up_step(
+bool hybrid_bottom_up_step(
         Graph g,
         int distance,
         vertex_set *new_frontier,
         int* distances) {
 
     bool success = false;
-
     #pragma omp parallel for schedule(static)
     for (int node = 0; node < g->num_nodes; node++) {
         if (distances[node] == NOT_VISITED_MARKER) {
@@ -191,15 +190,15 @@ void hybrid_bottom_up_step(
             const Vertex* end = incoming_end(g, node);
             for (const Vertex *v = start; v != end; v++) {
                 Vertex in = *v;
-                if (distances[in] == distance) {
+                if (distances[in] == distance && !success) {
                     distances[node] = distances[in] + 1;
-                    int index = __sync_fetch_and_add(&new_frontier->count, 1);
-                    new_frontier->vertices[index] = node;
+                    success = true;
                     break;
                 }
             }
         }
     }
+    return success;
 
     /*
     for (int node = 0; node < g->num_nodes; node++) {
@@ -284,14 +283,14 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     sol->distances[ROOT_NODE_ID] = 0;
     int distance = 0;
 
-    while (frontier->count != 0) {
+    while (true) {
 
 #ifdef VERBOSE
         double start_time = CycleTimer::currentSeconds();
 #endif
 
         vertex_set_clear(new_frontier);
-        hybrid_bottom_up_step(graph, distance, new_frontier, sol->distances);
+        if (!hybrid_bottom_up_step(graph, distance, new_frontier, sol->distances)) break;
         distance++;
 
 #ifdef VERBOSE
