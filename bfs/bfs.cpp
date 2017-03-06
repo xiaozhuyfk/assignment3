@@ -183,9 +183,10 @@ bool hybrid_bottom_up_step(
         vertex_set *new_frontier,
         int* distances) {
 
-    bool success = false;
+    //bool success = false;
+    int count = 0;
 
-    #pragma omp parallel for schedule(dynamic, 1000)
+    #pragma omp parallel for schedule(dynamic, 1000) reduction(+:count)
     for (int node = 0; node < g->num_nodes; node++) {
         if (distances[node] == NOT_VISITED_MARKER) {
             const Vertex* start = incoming_begin(g, node);
@@ -194,13 +195,14 @@ bool hybrid_bottom_up_step(
                 Vertex in = *v;
                 if (distances[in] == distance) {
                     distances[node] = distance + 1;
-                    success = true;
+                    //success = true;
+                    count++;
                     break;
                 }
             }
         }
     }
-    return success;
+    return count > 0;
 
     /*
     for (int node = 0; node < g->num_nodes; node++) {
