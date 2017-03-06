@@ -198,8 +198,8 @@ int bottom_up_step(
                     Vertex in = *v;
                     if (distances[in] == distance) {
                         distances[node] = distances[in] + 1;
-                        //__sync_fetch_and_add(&frontier_size[i], 1);
-                        frontier_size[i]++;
+                        __sync_fetch_and_add(&frontier_size[i], 1);
+                        //frontier_size[i]++;
                         break;
                     }
                 }
