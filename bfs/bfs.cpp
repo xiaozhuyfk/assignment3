@@ -209,23 +209,13 @@ void hybrid_bottom_up_step(
                         */
                         distances[node] = distance + 1;
                         dist_frontier[i][frontier_size[i]++] = node;
+                        break;
                     }
                 }
             }
         }
-
-        #pragma omp critical
-        {
-            int count = frontier_size[i];
-            memcpy(new_frontier->vertices + new_frontier->count,
-                    dist_frontier[i],
-                    sizeof(int) * count);
-            new_frontier->count += count;
-        }
     }
 
-    printf("after parallel\n");
-    /*
     for (int i = 0; i < num_threads; i++) {
         int count = frontier_size[i];
         memcpy(new_frontier->vertices + new_frontier->count,
@@ -233,7 +223,6 @@ void hybrid_bottom_up_step(
                 sizeof(int) * count);
         new_frontier->count += count;
     }
-    */
 
     #pragma omp parallel for
     for (int i = 0; i < num_threads; i++) {
