@@ -183,6 +183,7 @@ bool hybrid_bottom_up_step(
         int* distances) {
 
     bool success = false;
+
     #pragma omp parallel for schedule(static)
     for (int node = 0; node < g->num_nodes; node++) {
         if (distances[node] == NOT_VISITED_MARKER) {
@@ -190,8 +191,8 @@ bool hybrid_bottom_up_step(
             const Vertex* end = incoming_end(g, node);
             for (const Vertex *v = start; v != end; v++) {
                 Vertex in = *v;
-                if (distances[in] == distance && !success) {
-                    distances[node] = distances[in] + 1;
+                if (distances[in] == distance) {
+                    distances[node] = distance + 1;
                     success = true;
                     break;
                 }
