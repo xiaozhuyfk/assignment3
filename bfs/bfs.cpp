@@ -62,10 +62,9 @@ void top_down_step(
     memset(frontier_size, 0, num_threads * sizeof(int));
 
 
-    //for (int block = 0; block < frontier->count; block += num_threads) {
     #pragma omp parallel for
-    for (int i = 0; i < num_threads; i++) {
-        for (int block = 0; block < frontier->count; block += num_threads) {
+    for (int block = 0; block < frontier->count; block += num_threads) {
+        for (int i = 0; i < num_threads; i++) {
             if (block + i < frontier->count) {
                 int node = frontier->vertices[block + i];
                 int start_edge = g->outgoing_starts[node];
@@ -81,7 +80,8 @@ void top_down_step(
                             &distances[outgoing],
                             NOT_VISITED_MARKER,
                             distances[node] + 1)) {
-                        int index = frontier_size[i]++;
+                        //int index = frontier_size[i]++;
+                        int index = __sync_fetch_and_add(&frontier_size[i], 1);
                         dist_frontier[i * g->num_nodes + index] = outgoing;
                     }
                 }
