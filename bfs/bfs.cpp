@@ -190,18 +190,17 @@ int bottom_up_step(
 
         #pragma omp for schedule(static)
         for (int block = 0; block < g->num_nodes; block += num_threads) {
-            if (block + i >= g->num_nodes) break;
-            if (distances[block + i] != NOT_VISITED_MARKER) continue;
-
             int node = block + i;
-            const Vertex* start = incoming_begin(g, node);
-            const Vertex* end = incoming_end(g, node);
-            for (const Vertex *v = start; v != end; v++) {
-                Vertex in = *v;
-                if (distances[in] == distance) {
-                    distances[node] = distances[in] + 1;
-                    __sync_fetch_and_add(&frontier_size[i], 1)
-                    break;
+            if (node < g->num_nodes && distances[node] == NOT_VISITED_MARKER) {
+                const Vertex* start = incoming_begin(g, node);
+                const Vertex* end = incoming_end(g, node);
+                for (const Vertex *v = start; v != end; v++) {
+                    Vertex in = *v;
+                    if (distances[in] == distance) {
+                        distances[node] = distances[in] + 1;
+                        __sync_fetch_and_add(&frontier_size[i], 1)
+                        break;
+                    }
                 }
             }
         }
