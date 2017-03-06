@@ -152,7 +152,7 @@ bool bottom_up_step(
 
     bool success = false;
 
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(dynamic, 1000)
     for (int i = 0; i < g->num_nodes; i++) {
         if (distances[i] == NOT_VISITED_MARKER) {
             int node = i;
@@ -185,7 +185,7 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     // each step of the BFS process.
 
     // initialize all nodes to NOT_VISITED
-    //#pragma omp parallel for
+    #pragma omp parallel for
     for (int i = 0; i < graph->num_nodes; i++)
         sol->distances[i] = NOT_VISITED_MARKER;
 
