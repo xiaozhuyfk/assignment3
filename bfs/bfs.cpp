@@ -154,18 +154,17 @@ bool bottom_up_step(
 
     #pragma omp parallel for schedule(static)
     for (int i = 0; i < g->num_nodes; i++) {
-        if (distances[i] != NOT_VISITED_MARKER) continue;
-
-        int node = i;
-        const Vertex* start = incoming_begin(g, node);
-        const Vertex* end = incoming_end(g, node);
-        for (const Vertex *v = start; v != end; v++) {
-            Vertex in = *v;
-            if (distances[in] == distance &&
-                    distances[node] == NOT_VISITED_MARKER) {
-                distances[node] = distances[in] + 1;
-                success = true;
-                break;
+        if (distances[i] == NOT_VISITED_MARKER) {
+            int node = i;
+            const Vertex* start = incoming_begin(g, node);
+            const Vertex* end = incoming_end(g, node);
+            for (const Vertex *v = start; v != end; v++) {
+                Vertex in = *v;
+                if (distances[in] == distance && distances[node] == NOT_VISITED_MARKER) {
+                    distances[node] = distances[in] + 1;
+                    success = true;
+                    break;
+                }
             }
         }
     }
