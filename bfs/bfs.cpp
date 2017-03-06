@@ -295,7 +295,7 @@ void bfs_hybrid(Graph graph, solution* sol) {
 #endif
 
         vertex_set_clear(new_frontier);
-        if (frontier->count < graph->num_nodes / 2) {
+        if (frontier->count < 1000000) {
             top_down_step(graph, frontier, new_frontier, sol->distances);
             if (new_frontier->count == 0) break;
         } else {
