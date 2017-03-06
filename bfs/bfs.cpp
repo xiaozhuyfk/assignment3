@@ -184,7 +184,7 @@ int bottom_up_step(
     int frontier_size[num_threads];
     memset(frontier_size, 0, num_threads * sizeof(int));
 
-    #pragma omp parallel
+    #pragma omp parallel schedule(static)
     {
         int i = omp_get_thread_num();
 
