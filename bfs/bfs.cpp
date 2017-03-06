@@ -170,7 +170,7 @@ bool bottom_up_step(
                 Vertex in = *v;
                 if (distances[in] == distance) {
                     distances[node] = distances[in] + 1;
-
+                    success = true;
                     break;
                 }
             }
@@ -192,28 +192,43 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     // code by creating subroutine bottom_up_step() that is called in
     // each step of the BFS process.
 
+    vertex_set list1;
+    vertex_set list2;
+    vertex_set_init(&list1, graph->num_nodes);
+    vertex_set_init(&list2, graph->num_nodes);
+
+    vertex_set* frontier = &list1;
+    vertex_set* new_frontier = &list2;
+
     // initialize all nodes to NOT_VISITED
     #pragma omp parallel for
     for (int i = 0; i < graph->num_nodes; i++)
         sol->distances[i] = NOT_VISITED_MARKER;
 
     // setup frontier with the root node
+    frontier->vertices[frontier->count++] = ROOT_NODE_ID;
     sol->distances[ROOT_NODE_ID] = 0;
     int distance = 0;
 
-    while (true) {
+    while (frontier->count != 0) {
 
 #ifdef VERBOSE
         double start_time = CycleTimer::currentSeconds();
 #endif
 
-        if (!bottom_up_step(graph, distance, sol->distances)) break;
+        vertex_set_clear(new_frontier);
+        hybrid_bottom_up_step(graph, distance, new_frontier, sol->distances);
         distance++;
 
 #ifdef VERBOSE
         double end_time = CycleTimer::currentSeconds();
         printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
 #endif
+
+        // swap pointers
+        vertex_set* tmp = frontier;
+        frontier = new_frontier;
+        new_frontier = tmp;
     }
 }
 
