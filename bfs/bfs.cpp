@@ -193,7 +193,7 @@ void bfs_bottom_up(Graph graph, solution* sol) {
 
 #ifdef VERBOSE
         double end_time = CycleTimer::currentSeconds();
-        printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
+        printf("%.4f sec\n", end_time - start_time);
 #endif
     }
 }
