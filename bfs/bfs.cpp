@@ -70,6 +70,7 @@ void top_down_step(
             }
         }
 
+        /*
         #pragma omp critical
         {
             int count = frontier_size[i];
@@ -78,17 +79,27 @@ void top_down_step(
                     sizeof(int) * count);
             new_frontier->count += count;
         }
+        */
     }
 
-    /*
+    int prefix_sum[num_threads];
+    int sum = 0;
     for (int i = 0; i < num_threads; i++) {
+        prefix_sum[i] = new_frontier->count;
         int count = frontier_size[i];
-        memcpy(new_frontier->vertices + new_frontier->count,
-                dist_frontier[i],
-                sizeof(int) * count);
+        //memcpy(new_frontier->vertices + new_frontier->count,
+        //        dist_frontier[i],
+        //        sizeof(int) * count);
         new_frontier->count += count;
     }
-    */
+
+    #pragma omp parallel for
+    for (int i = 0; i < num_threads; i++) {
+        int count = frontier_size[i];
+        memcpy(new_frontier->vertices + prefix_sum[i],
+                        dist_frontier[i],
+                        sizeof(int) * count);
+    }
 
     #pragma omp parallel for
     for (int i = 0; i < num_threads; i++) {
