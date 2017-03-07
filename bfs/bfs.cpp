@@ -43,7 +43,7 @@ void top_down_step(
         int i = omp_get_thread_num();
         dist_frontier[i] = (int *) malloc(sizeof(int) * g->num_nodes);
 
-        #pragma omp for schedule(static)
+        #pragma omp for schedule(dynamic, 1000)
         for (int idx = 0; idx < frontier->count; idx++) {
             int node = frontier->vertices[idx];
             int start_edge = g->outgoing_starts[node];
@@ -83,16 +83,17 @@ void top_down_step(
     }
 
     int prefix_sum[num_threads];
-    int sum = 0;
+
     for (int i = 0; i < num_threads; i++) {
-        prefix_sum[i] = new_frontier->count;
+        //prefix_sum[i] = new_frontier->count;
         int count = frontier_size[i];
-        //memcpy(new_frontier->vertices + new_frontier->count,
-        //        dist_frontier[i],
-        //        sizeof(int) * count);
+        memcpy(new_frontier->vertices + new_frontier->count,
+                dist_frontier[i],
+                sizeof(int) * count);
         new_frontier->count += count;
     }
 
+    /*
     #pragma omp parallel for
     for (int i = 0; i < num_threads; i++) {
         int count = frontier_size[i];
@@ -100,6 +101,7 @@ void top_down_step(
                         dist_frontier[i],
                         sizeof(int) * count);
     }
+    */
 
     #pragma omp parallel for
     for (int i = 0; i < num_threads; i++) {
