@@ -54,12 +54,18 @@ void top_down_step(
             // attempt to add all neighbors to the new frontier
             for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
                 int outgoing = g->outgoing_edges[neighbor];
-                //if (distances[outgoing] != NOT_VISITED_MARKER) continue;
+                /*
+                if (distances[outgoing] != NOT_VISITED_MARKER) continue;
 
                 if (__sync_bool_compare_and_swap(
                         &distances[outgoing],
                         NOT_VISITED_MARKER,
                         distances[node] + 1)) {
+                    dist_frontier[i][frontier_size[i]++] = outgoing;
+                }
+                */
+                if (distances[outgoing] == NOT_VISITED_MARKER) {
+                    distances[outgoing] = distances[node] + 1;
                     dist_frontier[i][frontier_size[i]++] = outgoing;
                 }
             }
