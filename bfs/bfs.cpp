@@ -13,7 +13,7 @@
 
 #define ROOT_NODE_ID 0
 #define NOT_VISITED_MARKER -1
-
+#define VERBOSE
 
 void vertex_set_clear(vertex_set* list) {
     list->count = 0;
@@ -65,7 +65,8 @@ void top_down_step(
             }
         }
 
-        #pragma omp critical reduction(+:new_frontier->count)
+        /*
+        #pragma omp critical
         {
             int count = frontier_size[i];
             memcpy(new_frontier->vertices + new_frontier->count,
@@ -73,9 +74,9 @@ void top_down_step(
                     sizeof(int) * count);
             new_frontier->count += count;
         }
+        */
     }
 
-    /*
     for (int i = 0; i < num_threads; i++) {
         int count = frontier_size[i];
         memcpy(new_frontier->vertices + new_frontier->count,
@@ -83,7 +84,6 @@ void top_down_step(
                 sizeof(int) * count);
         new_frontier->count += count;
     }
-    */
 
     #pragma omp parallel for
     for (int i = 0; i < num_threads; i++) {
