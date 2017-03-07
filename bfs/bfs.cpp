@@ -65,7 +65,7 @@ void top_down_step(
             }
         }
 
-        #pragma omp critical
+        #pragma omp critical reduction(+:new_frontier->count)
         {
             int count = frontier_size[i];
             memcpy(new_frontier->vertices + new_frontier->count,
@@ -235,13 +235,13 @@ void bfs_hybrid(Graph graph, solution* sol) {
         if (frontier->count < 1000000) {
             if (!top_down) {
                 vertex_set_clear(frontier);
-
                 for (int i = 0; i < graph->num_nodes; i++) {
                     if (sol->distances[i] == distance) {
                         frontier->vertices[frontier->count++] = i;
                     }
                 }
             }
+
             top_down_step(graph, frontier, new_frontier, sol->distances);
             count = new_frontier->count;
             top_down = true;
