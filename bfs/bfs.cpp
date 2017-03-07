@@ -13,7 +13,7 @@
 
 #define ROOT_NODE_ID 0
 #define NOT_VISITED_MARKER -1
-#define VERBOSE
+#define TOPDOWN
 
 void vertex_set_clear(vertex_set* list) {
     list->count = 0;
@@ -117,7 +117,7 @@ void bfs_top_down(Graph graph, solution* sol) {
 
     while (frontier->count != 0) {
 
-#ifdef VERBOSE
+#ifdef TOPDOWN
         double start_time = CycleTimer::currentSeconds();
 #endif
 
@@ -125,7 +125,7 @@ void bfs_top_down(Graph graph, solution* sol) {
 
         top_down_step(graph, frontier, new_frontier, sol->distances);
 
-#ifdef VERBOSE
+#ifdef TOPDOWN
         double end_time = CycleTimer::currentSeconds();
         printf("frontier=%-10d %.4f sec\n", frontier->count, end_time - start_time);
 #endif
