@@ -174,7 +174,17 @@ void bfs_bottom_up(Graph graph, solution* sol) {
 }
 
 
-void create_new_fron
+void construct_frontier_from_bottom_up(
+        Graph graph,
+        vertex_set *frontier,
+        solution *sol,
+        int distance) {
+    for (int i = 0; i < graph->num_nodes; i++) {
+        if (sol->distances[i] == distance) {
+            frontier->vertices[frontier->count++] = i;
+        }
+    }
+}
 
 
 void bfs_hybrid(Graph graph, solution* sol) {
@@ -219,11 +229,7 @@ void bfs_hybrid(Graph graph, solution* sol) {
             // need to create the new frontier
             if (!top_down) {
                 vertex_set_clear(frontier);
-                for (int i = 0; i < graph->num_nodes; i++) {
-                    if (sol->distances[i] == distance) {
-                        frontier->vertices[frontier->count++] = i;
-                    }
-                }
+                construct_frontier_from_bottom_up(graph, frontier, sol, distance);
             }
 
             // run top-down step
