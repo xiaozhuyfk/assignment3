@@ -36,7 +36,6 @@ void top_down_step(
     #pragma omp parallel
     {
         int num_threads = omp_get_num_threads();
-        int i = omp_get_thread_num();
         int frontier_size = 0;
         int *local_frontier = (int *) malloc(sizeof(int) * g->num_nodes);
 
@@ -67,35 +66,6 @@ void top_down_step(
 
         free(local_frontier);
     }
-
-    /*
-    for (int i = 0; i < num_threads; i++) {
-        //prefix_sum[i] = new_frontier->count;
-        int count = frontier_size[i];
-        memcpy(new_frontier->vertices + new_frontier->count,
-                dist_frontier[i],
-                sizeof(int) * count);
-        new_frontier->count += count;
-    }
-    */
-
-    /*
-    #pragma omp parallel for
-    for (int i = 0; i < num_threads; i++) {
-        int count = frontier_size[i];
-        memcpy(new_frontier->vertices + prefix_sum[i],
-                        dist_frontier[i],
-                        sizeof(int) * count);
-    }
-    */
-
-    /*
-    #pragma omp parallel for
-    for (int i = 0; i < num_threads; i++) {
-        free(dist_frontier[i]);
-    }
-    free(dist_frontier);
-    */
 }
 
 // Implements top-down BFS.
@@ -128,7 +98,6 @@ void bfs_top_down(Graph graph, solution* sol) {
 #endif
 
         vertex_set_clear(new_frontier);
-
         top_down_step(graph, frontier, new_frontier, sol->distances);
 
 #ifdef TOPDOWN
@@ -204,6 +173,10 @@ void bfs_bottom_up(Graph graph, solution* sol) {
     }
 }
 
+
+void create_new_fron
+
+
 void bfs_hybrid(Graph graph, solution* sol) {
     // 15-418/618 students:
     //
@@ -238,7 +211,12 @@ void bfs_hybrid(Graph graph, solution* sol) {
 #endif
 
         vertex_set_clear(new_frontier);
+
+        // cases on the frontier size to choose top-down or bottom-up
         if (frontier->count < 1000000) {
+
+            // if previous step is not top-down,
+            // need to create the new frontier
             if (!top_down) {
                 vertex_set_clear(frontier);
                 for (int i = 0; i < graph->num_nodes; i++) {
@@ -248,10 +226,13 @@ void bfs_hybrid(Graph graph, solution* sol) {
                 }
             }
 
+            // run top-down step
             top_down_step(graph, frontier, new_frontier, sol->distances);
             count = new_frontier->count;
             top_down = true;
         } else {
+
+            // run bottom-up step
             count = bottom_up_step(graph, distance, sol->distances);
             top_down = false;
         }
