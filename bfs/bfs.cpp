@@ -33,15 +33,12 @@ void top_down_step(
         vertex_set* new_frontier,
         int* distances) {
 
-    int num_threads = omp_get_max_threads();
-    int **dist_frontier = (int **) malloc(sizeof(int *) * num_threads);
-    int frontier_size[num_threads];
-    memset(frontier_size, 0, num_threads * sizeof(int));
-
     #pragma omp parallel
     {
+        int num_threads = omp_get_num_threads();
         int i = omp_get_thread_num();
-        dist_frontier[i] = (int *) malloc(sizeof(int) * g->num_nodes);
+        int frontier_size = 0;
+        int *local_frontier = (int *) malloc(sizeof(int) * g->num_nodes);
 
         #pragma omp for
         for (int idx = 0; idx < frontier->count; idx++) {
@@ -55,25 +52,23 @@ void top_down_step(
                 int outgoing = g->outgoing_edges[neighbor];
                 if (distances[outgoing] == NOT_VISITED_MARKER) {
                     distances[outgoing] = distances[node] + 1;
-                    dist_frontier[i][frontier_size[i]++] = outgoing;
+                    local_frontier[frontier_size++] = outgoing;
                 }
             }
         }
 
-        /*
         #pragma omp critical
         {
-            int count = frontier_size[i];
             memcpy(new_frontier->vertices + new_frontier->count,
-                    dist_frontier[i],
-                    sizeof(int) * count);
-            new_frontier->count += count;
+                    local_frontier,
+                    sizeof(int) * frontier_size);
+            new_frontier->count += frontier_size;
         }
 
-        free(dist_frontier[i]);
-        */
+        free(local_frontier);
     }
 
+    /*
     for (int i = 0; i < num_threads; i++) {
         //prefix_sum[i] = new_frontier->count;
         int count = frontier_size[i];
@@ -82,6 +77,7 @@ void top_down_step(
                 sizeof(int) * count);
         new_frontier->count += count;
     }
+    */
 
     /*
     #pragma omp parallel for
@@ -93,11 +89,13 @@ void top_down_step(
     }
     */
 
+    /*
     #pragma omp parallel for
     for (int i = 0; i < num_threads; i++) {
         free(dist_frontier[i]);
     }
     free(dist_frontier);
+    */
 }
 
 // Implements top-down BFS.

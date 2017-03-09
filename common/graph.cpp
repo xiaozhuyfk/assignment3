@@ -21,8 +21,7 @@ void free_graph(Graph graph) {
 void build_start(graph* graph, int* scratch) {
     int num_nodes = graph->num_nodes;
     graph->outgoing_starts = (int*) malloc(sizeof(int) * num_nodes);
-    for (int i = 0; i < num_nodes; i++)
-            {
+    for (int i = 0; i < num_nodes; i++) {
         graph->outgoing_starts[i] = scratch[i];
     }
 }
