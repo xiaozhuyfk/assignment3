@@ -223,7 +223,7 @@ void bfs_hybrid(Graph graph, solution* sol) {
         vertex_set_clear(new_frontier);
 
         // cases on the frontier size to choose top-down or bottom-up
-        if (frontier->count < 1000000) {
+        if (frontier->count < graph->num_nodes / 4) {
 
             // if previous step is not top-down,
             // need to create the new frontier
