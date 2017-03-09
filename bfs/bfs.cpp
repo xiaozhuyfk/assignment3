@@ -33,13 +33,12 @@ void top_down_step(
         vertex_set* new_frontier,
         int* distances) {
 
-    #pragma omp parallel
+    #pragma omp parallel num_threads(32)
     {
-        int num_threads = omp_get_num_threads();
         int frontier_size = 0;
         int *local_frontier = (int *) malloc(sizeof(int) * g->num_nodes / 4);
 
-        #pragma omp for
+        #pragma omp for schedule(static)
         for (int idx = 0; idx < frontier->count; idx++) {
             int node = frontier->vertices[idx];
             int start_edge = g->outgoing_starts[node];
