@@ -30,6 +30,14 @@ public:
     Vertex start_vertex;
     Vertex end_vertex;
 
+    // TODO: Implement internal representations suitable for doing bfs/pagerank
+    // like part 1 from the in_edges and out_edges vectors
+
+    std::map<Vertex, std::set<Vertex>> incoming_edges;
+    std::map<Vertex, std::set<Vertex>> outgoing_edges;
+    std::vector<std::vector<Vertex>> incoming_world_map(world_size,std::vector<Vertex>);
+    std::vector<std::vector<Vertex>> outgoing_world_map(world_size,std::vector<Vertex>);
+
     DistGraph(int _vertices_per_process, int _max_edges_per_vertex,
               GraphType _type, int _world_size, int _world_rank);
 
@@ -53,6 +61,8 @@ public:
     // array of outgoing edges from vertices owned by the node
     // out_edges[i].src should always be local to this node
     std::vector<Edge> out_edges;
+
+    std::set<Vertex> not_disjoint;
 
     // Called after in_edges and out_edges are initialized. May be
     // useful for students to precompute/build additional structures
@@ -353,11 +363,42 @@ void DistGraph::generate_graph_clustered() {
  */
 inline
 void DistGraph::setup() {
+    /*for (int i = 0; i<world_size;i++){
+        std::vector<Vertex> temp;
+        std::vector<Vertex> temp1;
+        std::vector<Vertex> temp2;
+        std::vector<Vertex> temp3;
+        incoming_edges.push_back(temp);
+        outgoing_edges.push_back(temp1);
+        incoming_world_map.push_back(temp);
+        outgoing_world_map.push_back(temp1);
+    }*/
+    std::map<int,std::set<Vertex>> in_map_set;
+    std::map<int,std::set<Vertex>> out_map_set;
 
-  // This method is called after in_edges and out_edges
-  // have been initialized.  This is the point where student code may wish
-  // to setup its data structures, precompute anythign about the
-  // topology, or put the graph in the desired form for future computation.
+    std::vector <int> v(map[w].beign(),v.end())
+
+    int offset = world_rank * vertices_per_process;
+    for (auto &e: in_edges){
+        incoming_edges[e.dest].insert(e.src); //map local destination to global source
+        int rank = get_vertex_owner_rank(e.src);
+        in_map_set[rank].insert(e.src);
+    }
+    for (int i = 0; i < world_size;i++) {
+        std::vector<Vertex> v(in_map_set[i].begin(),in_map_set[i].end());
+        std::sort(v.begin(),v.end());
+        incoming_world_map[i] = v;
+    }
+    for (auto &e: out_edges){
+        outgoing_edges[e.src].insert(e.dest); //map local source to global destination
+        int rank = get_vertex_owner_rank(e.dest);
+        out_map_set[rank].insert(e.dest);
+    }
+    for (int i = 0; i < world_size;i++) {
+        std::vector<Vertex> v(out_map_set[i].begin(),out_map_set[i].end());
+        std::sort(v.begin(),v.end());
+        outgoing_world_map[i] = v;
+    }
 }
 
 #endif
