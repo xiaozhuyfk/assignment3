@@ -37,7 +37,7 @@ void top_down_step(
     {
         int num_threads = omp_get_num_threads();
         int frontier_size = 0;
-        int *local_frontier = (int *) malloc(sizeof(int) * g->num_nodes);
+        int *local_frontier = (int *) malloc(sizeof(int) * g->num_nodes / 4);
 
         #pragma omp for
         for (int idx = 0; idx < frontier->count; idx++) {
