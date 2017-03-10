@@ -8,6 +8,8 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
+#include <vector>
+#include <algorithm>
 
 #include "graph_dist_ref.h"
 
@@ -35,8 +37,8 @@ public:
 
     std::map<Vertex, std::set<Vertex>> incoming_edges;
     std::map<Vertex, std::set<Vertex>> outgoing_edges;
-    std::vector<std::vector<Vertex>> incoming_world_map(world_size,std::vector<Vertex>);
-    std::vector<std::vector<Vertex>> outgoing_world_map(world_size,std::vector<Vertex>);
+    std::vector<std::vector<Vertex>> incoming_world_map;
+    std::vector<std::vector<Vertex>> outgoing_world_map;
 
     DistGraph(int _vertices_per_process, int _max_edges_per_vertex,
               GraphType _type, int _world_size, int _world_rank);
@@ -375,10 +377,10 @@ void DistGraph::setup() {
     }*/
     std::map<int,std::set<Vertex>> in_map_set;
     std::map<int,std::set<Vertex>> out_map_set;
+    incoming_world_map = std::vector<std::vector<Vertex>>(world_size,std::vector<Vertex>());
+    outgoing_world_map = std::vector<std::vector<Vertex>>(world_size,std::vector<Vertex>());
 
-    std::vector <int> v(map[w].beign(),v.end())
-
-    int offset = world_rank * vertices_per_process;
+    //int offset = world_rank * vertices_per_process;
     for (auto &e: in_edges){
         incoming_edges[e.dest].insert(e.src); //map local destination to global source
         int rank = get_vertex_owner_rank(e.src);
