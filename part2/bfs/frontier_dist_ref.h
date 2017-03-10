@@ -9,29 +9,29 @@ using Vertex = int;
  * is present on that node.
  */
 class DistFrontierRef {
-  public:
-    // Maximum number of vertices that a single node's frontier could have
-    // at any given point in time
-    int max_vertices_per_node;
+    public:
+        // Maximum number of vertices that a single node's frontier could have
+        // at any given point in time
+        int max_vertices_per_node;
 
-    // Distributed frontier structure - every node independently produces a new
-    // frontier using its local vertices, and places the frontier vertices in the
-    // arrays corresponding to the owning nodes for each destination.
-    Vertex **elements;
-    int **depths;
-    int *sizes;
+        // Distributed frontier structure - every node independently produces a new
+        // frontier using its local vertices, and places the frontier vertices in the
+        // arrays corresponding to the owning nodes for each destination.
+        Vertex **elements;
+        int **depths;
+        int *sizes;
 
-    int world_size;
-    int world_rank;
+        int world_size;
+        int world_rank;
 
-    DistFrontierRef(int _max_vertices_per_node, int _world_size, int _world_rank);
-    ~DistFrontierRef();
+        DistFrontierRef(int _max_vertices_per_node, int _world_size, int _world_rank);
+        ~DistFrontierRef();
 
-    void clear();
-    void add(int owner_rank, Vertex v, int depth);
+        void clear();
+        void add(int owner_rank, Vertex v, int depth);
 
-    int get_local_frontier_size();
-    Vertex* get_local_frontier();
+        int get_local_frontier_size();
+        Vertex* get_local_frontier();
 
-    bool is_empty();
+        bool is_empty();
 };
