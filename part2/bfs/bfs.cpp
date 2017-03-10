@@ -56,6 +56,10 @@ void bfs_step(DistGraph &g, int *depths,
     //
     // implement a step of the BFS
 
+    /*
+     * TODO: use top-down method
+     */
+
 }
 
 /*
@@ -98,6 +102,7 @@ void bfs(DistGraph &g, int *depths) {
 
         // exchange frontier information
         global_frontier_sync(g, *next_front, depths);
+        depths++;
 
         DistFrontier *temp = cur_front;
         cur_front = next_front;

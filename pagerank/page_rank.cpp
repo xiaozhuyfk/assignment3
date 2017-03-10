@@ -94,7 +94,7 @@ void pageRank(Graph g, double* solution, double damping, double convergence) {
         }
 
         double diff = 0;
-        #pragma opm parallel for reduction(+:diff)
+        #pragma omp parallel for reduction(+:diff)
         for (int i = 0; i < numNodes; i++) {
             diff += std::abs(solution[i] - old[i]);
         }

@@ -40,11 +40,11 @@ class DistFrontier {
 };
 
 inline
-DistFrontier::DistFrontier(int _max_vertices_per_node, int _world_size,
-        int _world_rank) :
+DistFrontier::DistFrontier(int _max_vertices_per_node, int _world_size, int _world_rank) :
         max_vertices_per_node(_max_vertices_per_node),
                 world_size(_world_size),
                 world_rank(_world_rank) {
+
     elements = new Vertex*[world_size];
     depths = new int*[world_size];
     for (int i = 0; i < world_size; ++i) {
@@ -98,6 +98,21 @@ inline
 bool DistFrontier::is_empty() {
     // 15-418/618 STUDENT TODO: Implement this function. Should return
     // true if the cluster-wide frontier is zero
+
+    /*
+     * TODO: case on world rank
+     *      if (world rank > 0) {
+     *          send frontier size to master node
+     *
+     *          receive broadcast from master node
+     *      } else {
+     *          receive frontier size from worker nodes
+     *
+     *          broadcast frontier size to worker nodes
+     *      }
+     *
+     *      return (count == 0);
+     */
     return true;
 }
 
