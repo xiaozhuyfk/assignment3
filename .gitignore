@@ -64,9 +64,11 @@ objs/
 
 # PageRank
 pagerank/pr
+pagerank/pr_grader
 part2/pagerank/pr_dist
 
 # BFS
 bfs/bfs
+bfs/bfs_grader
 part2/bfs/bfs_dist
 

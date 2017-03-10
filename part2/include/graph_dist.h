@@ -18,6 +18,7 @@ using Vertex = int;
  * the "owner" of a subset of the vertices in the graph
  */
 class DistGraph {
+
     public:
         int vertices_per_process;   // vertices per cluster node
         int max_edges_per_vertex;
@@ -57,6 +58,7 @@ class DistGraph {
         // Called after in_edges and out_edges are initialized. May be
         // useful for students to precompute/build additional structures
         void setup();
+
 };
 
 // generates a distributed graph of the given graph type (uniform,
@@ -352,11 +354,43 @@ void DistGraph::generate_graph_clustered() {
  */
 inline
 void DistGraph::setup() {
+    /*for (int i = 0; i<world_size;i++){
+     std::vector<Vertex> temp;
+     std::vector<Vertex> temp1;
+     std::vector<Vertex> temp2;
+     std::vector<Vertex> temp3;
+     incoming_edges.push_back(temp);
+     outgoing_edges.push_back(temp1);
+     incoming_world_map.push_back(temp);
+     outgoing_world_map.push_back(temp1);
+     }*/
+    std::map<int, std::set<Vertex>> in_map_set;
+    std::map<int, std::set<Vertex>> out_map_set;
 
-    // This method is called after in_edges and out_edges
-    // have been initialized.  This is the point where student code may wish
-    // to setup its data structures, precompute anythign about the
-    // topology, or put the graph in the desired form for future computation.
+    std::vector<int> v(map[w].beign(), v.end())
+
+    int offset = world_rank * vertices_per_process;
+    for (auto &e : in_edges) {
+        incoming_edges[e.dest].insert(e.src); //map local destination to global source
+        int rank = get_vertex_owner_rank(e.src);
+        in_map_set[rank].insert(e.src);
+    }
+    for (int i = 0; i < world_size; i++) {
+        std::vector < Vertex > v(in_map_set[i].begin(), in_map_set[i].end());
+        std::sort(v.begin(), v.end());
+        incoming_world_map[i] = v;
+    }
+    for (auto &e : out_edges) {
+        outgoing_edges[e.src].insert(e.dest); //map local source to global destination
+        int rank = get_vertex_owner_rank(e.dest);
+        out_map_set[rank].insert(e.dest);
+    }
+    for (int i = 0; i < world_size; i++) {
+        std::vector < Vertex > v(out_map_set[i].begin(), out_map_set[i].end());
+        std::sort(v.begin(), v.end());
+        outgoing_world_map[i] = v;
+    }
+
 }
 
 #endif
