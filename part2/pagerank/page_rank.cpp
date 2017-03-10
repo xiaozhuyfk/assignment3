@@ -43,13 +43,13 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
     int vertices_per_process = g.vertices_per_process; //numNodes
 
-    std::vector<double> score_curr(vertices_per_process);
-    std::vector<double> score_next(g.vertices_per_process);
+    //std::vector<double> score_curr(vertices_per_process);
+    //std::vector<double> score_next(g.vertices_per_process);
 
     // initialize per-vertex scores
     #pragma omp parallel for
-    for (Vertex i = 0; i < vertices_per_process; i++) {
-        score_curr[i] = equal_prob; // push local vertex index
+    for (int i = 0; i < vertices_per_process; ++i) {
+        solution[i] = equal_prob;
     }
 
     bool converged = false;
@@ -69,8 +69,9 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
     int offset_bit = (int) ceil(log10(vertices_per_process));
 
     while (!converged) {
+        std::cout << "iteration starts" << std::endl;
         std::memcpy(old, solution, sizeof(double) * vertices_per_process);
-
+        std::cout << "iteration after mem cpy" << std::endl;
         std::vector<double*> disjoint_send_bufs;
         std::vector<int> disjoint_send_idx;
         std::vector<double*> disjoint_recv_bufs;
