@@ -26,8 +26,6 @@ public:
     int world_size;
     int world_rank;
 
-    int num_vertices;
-
     // start and end vertex ids of the span of vertices "owned" by the
     // this node.  (nodes own a contiguous span of vertices)
     Vertex start_vertex;
@@ -64,7 +62,6 @@ public:
     // out_edges[i].src should always be local to this node
     std::vector<Edge> out_edges;
 
-    std::set<Vertex> not_disjoint;
 
     // Called after in_edges and out_edges are initialized. May be
     // useful for students to precompute/build additional structures
@@ -369,7 +366,6 @@ void DistGraph::setup() {
     outgoing_edges = std::vector<std::vector<Vertex>>(vertices_per_process);
     //world_incoming_edges = std::vector<std::vector<Vertex>>(world_size);
     //world_outgoing_edges = std::vector<std::vector<Vertex>>(world_size);
-    num_vertices = world_size * vertices_per_process;
     int offset = world_rank * vertices_per_process;
     /*
     for (auto &e: in_edges){
@@ -396,11 +392,14 @@ void DistGraph::setup() {
         int rank = get_vertex_owner_rank(e.src);
         world_incoming_size[rank]++;
         incoming_edges[e.dest-offset].push_back(e.src); //local to global index
+        //std::cout << world_rank << " " << e.dest << e.src << std::endl;
     }
+    //std::cout << "come on" << std::endl;
     for (auto &e: out_edges){
         int rank = get_vertex_owner_rank(e.dest);
         world_outgoing_size[rank]++;
         outgoing_edges[e.src-offset].push_back(e.dest);//local to global index
+        //std::cout << world_rank << " " << e.dest << e.src << std::endl;
     }
 }
 

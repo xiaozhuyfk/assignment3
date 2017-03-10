@@ -12,6 +12,12 @@
 
 #include "../include/graph_dist.h"
 
+typedef struct edge_package edge_package;
+
+struct edge_package {
+    int recv_vertex;
+    double score;
+};
 
 /*
  * pageRank-- 
@@ -42,9 +48,11 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
     double equal_prob = 1.0/totalVertices;
 
     int vertices_per_process = g.vertices_per_process; //numNodes
+    //std::cout << vertices_per_process << std::endl;
 
     //std::vector<double> score_curr(vertices_per_process);
     //std::vector<double> score_next(g.vertices_per_process);
+    //assert(vertices_per_process == g.end_vertex-g.start_vertex+1);
 
     // initialize per-vertex scores
     #pragma omp parallel for
@@ -55,30 +63,28 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
     bool converged = false;
     //initialize local disjoint set
     std::vector<int> disjoint;
-    for (int v = g.start_vertex; v < g.end_vertex+1; v++) { //inclusive?
-        if (g.not_disjoint.find(v)==g.not_disjoint.end()) {
-            disjoint.push_back(v); //push global vertex index
+    for (int i = 0 ; i < vertices_per_process ; i++) {
+        //std::cout << "outgoing edge size " << i << " " << g.outgoing_edges[i].size() << std:: endl;
+        if (!g.outgoing_edges[i].size()) {
+            disjoint.push_back(i); //push global vertex index
         }
     }
+    //std::cout << "disjoint vertex size " << disjoint.size() << std:: endl;
 
     // initialize vertex weights to uniform probability. Double
     // precision scores are used to avoid underflow for large graphs
 
     double *old = (double *) malloc(sizeof(double) * vertices_per_process);
     int offset = g.world_rank * g.vertices_per_process;
-    int offset_bit = (int) ceil(log10(vertices_per_process));
 
     while (!converged) {
-        std::cout << "iteration starts" << std::endl;
+        //std::cout << g.world_rank << " iteration starts" << std::endl;
         std::memcpy(old, solution, sizeof(double) * vertices_per_process);
-        std::cout << "iteration after mem cpy" << std::endl;
         std::vector<double*> disjoint_send_bufs;
         std::vector<int> disjoint_send_idx;
         std::vector<double*> disjoint_recv_bufs;
 
         MPI_Request* disjoint_send_reqs = new MPI_Request[g.world_size];
-
-        //MPI_Status* probe_status = new MPI_Status[g.world_size];
 
         // Phase 1 : update disjoint weight 
         // Calculate local disjoint weight
@@ -89,9 +95,15 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         }
         //pass local disjoint 
         double* disjoint_send_buf = new double[1];
+        /*
+        for (size_t i = 0 ; i < sizeof(old)/sizeof(old[0]); i++){
+            std::cout << sizeof(old)/sizeof(old[0]) << std::endl;
+            std::cout << solution[1] << std::endl;
+        }*/
         
         for (int i = 0; i < g.world_size; i++) {
             if (i != g.world_rank) {
+                //std::cout << "should print here in send disjoint" << std:: endl;
                 disjoint_send_bufs.push_back(disjoint_send_buf);
                 disjoint_send_idx.push_back(i);
                 disjoint_send_buf[0] = disjoint_weight;
@@ -110,24 +122,25 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
                 disjoint_weight += recv_buf[0];
             }
         }
+        //std::cout << "disjoint_weight final " << disjoint_weight << std:: endl;
 
-
-        //clear disjoint buf
+        // clear disjoint buf
         for (size_t i = 0; i < disjoint_send_bufs.size(); i++) {
             MPI_Status status;
             MPI_Wait(&disjoint_send_reqs[disjoint_send_idx[i]], &status);
-            delete(disjoint_send_bufs[i]);
         }
+        delete(disjoint_send_bufs[0]);
 
         for (size_t i = 0; i < disjoint_recv_bufs.size(); i++) {
             delete(disjoint_recv_bufs[i]);
         }
 
         delete(disjoint_send_reqs);
+        //std::cout << "End of phase 1" << std::endl;
 
         // Phase 2 : Update common vertices
         // initialize buffer for main routine
-
+        /*
         std::vector<double*> send_bufs;
         std::vector<int> send_idx;
         std::vector<double*> recv_bufs;
@@ -139,9 +152,10 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         //prepare buffer in vector form
         #pragma omp parallel for
         for (int i = 0; i < vertices_per_process; i++) {
+            //std::cout << "Checking vertex : " << i << std::endl;
             double value = old[i] / static_cast<int>(g.outgoing_edges[i].size());
-            int integer_value = (int) value;
-            double decimal_value = value-(int) value;
+            double integer_value;
+            double decimal_value = modf(value, &integer_value);
 
             for (auto &out: g.outgoing_edges[i]){
                 int rank = g.get_vertex_owner_rank(out);
@@ -153,9 +167,13 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
                 else{
                     //update local score map on the destination vertex
                     score_map[out-offset] += value;
+                    //std::cout << "key is : " << out-offset << " and value is currently : " << score_map[out-offset] << std::endl;
                 }
             }
         }
+        //std::cout << "buf_map size " << buf_map.size() << std:: endl;
+        //std::cout << "score_map size " << score_map.size() << std:: endl;
+        //std::cout << "Construct vertex set" << std::endl;
 
         // initialize buffer size 
         // some tips for casting vector to array
@@ -172,6 +190,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
                     i, 0, MPI_COMM_WORLD, &send_reqs[i]);
             }
         }
+        //std::cout << "finished setting up buffer" << std::endl;
 
         // Receive and update value
         for (int i = 0; i < g.world_size; i++) {
@@ -184,11 +203,12 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
                 #pragma omp parallel for
                 for(int j = 0; j < g.world_incoming_size[i]; j++) {
                     double value = recv_buf[j];
-                    int integer_value = (int) value / offset_bit;
-                    int recv_vertex = (int) value - integer_value; // the index recv'd is local
-                    double decimal_value = value-(int) value;
-                    double final_value = integer_value + decimal_value;
-
+                    double integer_value;
+                    double decimal_value = modf(value, &integer_value);
+                    int recv_vertex = ((int) integer_value) % offset_bit; // the index recv'd is local
+                    //double decimal_value = value-(int) value;
+                    double final_value = ((int) integer_value)/offset_bit + decimal_value;
+                    //std::cout << "recv_vertex is : "<< recv_vertex << std::endl;
                     score_map[recv_vertex] += final_value;
                 }
             }
@@ -197,14 +217,15 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         // Update the final value to solution to prepare for next iteration
         #pragma omp parallel for
         for (int i = 0; i < vertices_per_process ; i++) {
-            solution[i] = (damping * score_map[i]) + (1.0 - damping) /  g.num_vertices + disjoint_weight;
+            solution[i] = (damping * score_map[i]) + (1.0 - damping) /  totalVertices + disjoint_weight;
+            //std::cout << totalVertices << " " << score_map[i] << std::endl;
+            //std::cout << "word_rank is : " << g.world_rank << " i is : " << i << " and current score is " << solution[i] << std::endl;
         }
 
         //clear buf
         for (size_t i = 0; i < send_bufs.size(); i++) {
             MPI_Status status;
             MPI_Wait(&send_reqs[send_idx[i]], &status);
-            delete(send_bufs[i]);
         }
 
         for (size_t i = 0; i < recv_bufs.size(); i++) {
@@ -212,6 +233,98 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         }
 
         delete(send_reqs);
+        //std::cout << "end of phase 2" << std::endl;
+        */
+
+        std::vector<double*> send_bufs;
+        std::vector<int> send_idx;
+        std::vector<double*> recv_bufs;
+        MPI_Request* send_reqs = new MPI_Request[g.world_size];
+
+        std::map<Vertex, std::vector<double>> buf_map; // buffer to send to other worlds
+        std::map<Vertex, double> score_map; // score to update to solution eventually
+
+        //prepare buffer in vector form
+        #pragma omp parallel for
+        for (int i = 0; i < vertices_per_process; i++) {
+            //std::cout << "Checking vertex : " << i << std::endl;
+            double value = old[i] / static_cast<int>(g.outgoing_edges[i].size());
+
+            for (auto &out: g.outgoing_edges[i]){
+                int rank = g.get_vertex_owner_rank(out);
+                if (rank != g.world_rank){
+                    //need to send to other world
+                    int out_offset = rank * vertices_per_process;
+                    buf_map[rank].push_back((out-out_offset)*1.0);
+                    buf_map[rank].push_back(value);
+                }
+                else{
+                    //update local score map on the destination vertex
+                    score_map[out-offset] += value;
+                    //std::cout << "key is : " << out-offset << " and value is currently : " << score_map[out-offset] << std::endl;
+                }
+            }
+        }
+        //std::cout << "buf_map size " << buf_map.size() << std:: endl;
+        //std::cout << "score_map size " << score_map.size() << std:: endl;
+        //std::cout << "Construct vertex set" << std::endl;
+
+        // initialize buffer size 
+        // some tips for casting vector to array
+        // double arr[100];
+        // std::copy(v.begin(), v.end(), arr);
+        for (int i = 0; i < g.world_size; i++) {
+            if (i != g.world_rank) {
+                double* send_buf = &buf_map[i][0];  //Need to check if RPC'd; new double[g.outgoing_edges[i]];
+                send_bufs.push_back(send_buf);
+                send_idx.push_back(i);
+                MPI_Isend(send_buf, 
+                    static_cast<int> (buf_map[i].size()), 
+                    MPI_DOUBLE, 
+                    i, 0, MPI_COMM_WORLD, &send_reqs[i]);
+            }
+        }
+        //std::cout << "finished setting up buffer" << std::endl;
+
+        // Receive and update value
+        for (int i = 0; i < g.world_size; i++) {
+            if (i!=g.world_rank) {
+                MPI_Status status;
+                double* recv_buf = new double[g.world_incoming_size[i] * 2];
+                recv_bufs.push_back(recv_buf);
+
+                MPI_Recv(recv_buf, g.world_incoming_size[i] * 2, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
+                #pragma omp parallel for
+                for(int j = 0; j < g.world_incoming_size[i]; j++) {
+                    double value = recv_buf[2 * j + 1];
+                    int recv_vertex = (int) recv_buf[2 * j];
+                    score_map[recv_vertex] += value;
+                }
+            }
+        }
+
+        // Update the final value to solution to prepare for next iteration
+        #pragma omp parallel for
+        for (int i = 0; i < vertices_per_process ; i++) {
+            solution[i] = (damping * score_map[i]) + (1.0 - damping) /  totalVertices + disjoint_weight;
+            //std::cout << totalVertices << " " << score_map[i] << std::endl;
+            //std::cout << "word_rank is : " << g.world_rank << " i is : " << i << " and current score is " << solution[i] << std::endl;
+        }
+
+        //clear buf
+        for (size_t i = 0; i < send_bufs.size(); i++) {
+            MPI_Status status;
+            MPI_Wait(&send_reqs[send_idx[i]], &status);
+        }
+
+        for (size_t i = 0; i < recv_bufs.size(); i++) {
+            delete(recv_bufs[i]);
+        }
+
+        delete(send_reqs);
+        //std::cout << "end of phase 2" << std::endl;
+
+
 
         // Phase 3 : Check for convergence
         std::vector<double*> converge_send_bufs;
@@ -248,23 +361,25 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
                 MPI_Recv(recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
                 diff += recv_buf[0];
             }
-        }
-
+        }   
         converged = (diff < convergence);
+        //std::cout << "converge " << converged << std::endl;
 
         //clear converge buf
         for (size_t i = 0; i < converge_send_bufs.size(); i++) {
             MPI_Status status;
             MPI_Wait(&converge_send_reqs[converge_send_idx[i]], &status);
-            delete(converge_send_bufs[i]);
         }
+        delete(converge_send_bufs[0]);
 
         for (size_t i = 0; i < converge_recv_bufs.size(); i++) {
             delete(converge_recv_bufs[i]);
         }
 
         delete(converge_send_reqs);
-    
+        //std::cout << "end of iteration" << std::endl;
+
+
     }
 
     free(old);
