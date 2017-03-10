@@ -9,19 +9,20 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include <map>
 
 #include "graph_dist_ref.h"
 
 using Vertex = int;
 
-/* 
+/*
  * Representation of a distributed graph.  Each node in the cluster is
  * the "owner" of a subset of the vertices in the graph
- */ 
+ */
 class DistGraph {
 public:
     int vertices_per_process;   // vertices per cluster node
-    int max_edges_per_vertex;  
+    int max_edges_per_vertex;
 
     int world_size;
     int world_rank;
@@ -98,7 +99,7 @@ DistGraph::DistGraph(int _vertices_per_process, int _max_edges_per_vertex,
 
 /*
  * get_vertex_owner_rank --
- * 
+ *
  * Returns the id of the node that is the owner of the vertex
  */
 inline
@@ -108,7 +109,7 @@ int DistGraph::get_vertex_owner_rank(Vertex v) {
 
 /*
  * total_vertices --
- * 
+ *
  * Returns to total number of vertices in the graph
  */
 inline
@@ -118,7 +119,7 @@ int DistGraph::total_vertices() {
 
 /*
  * get_incoming_edges --
- * 
+ *
  * uses inter-node communication to build a list of in_edges from the
  * distributed list of out_edges
  */
@@ -358,7 +359,7 @@ void DistGraph::generate_graph_clustered() {
 }
 
 /*
- * setup -- 
+ * setup --
  */
 inline
 void DistGraph::setup() {
