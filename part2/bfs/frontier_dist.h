@@ -113,6 +113,44 @@ bool DistFrontier::is_empty() {
      *
      *      return (count == 0);
      */
+    if (world_rank) {
+        std::vector<Vertex**> send_bufs;
+        std::vector<int> send_idx;
+        std::vector<Vertex*> recv_buf;
+
+        MPI_Request* send_reqs = new MPI_Request[2];
+
+        //pass local disjoint
+        Vertex* disjoint_send_buf = elements;
+
+        int size_sum = 0;
+        for (auto& s : sizes) {
+            size_sum += s;
+        }
+
+        for (int i = 0; i < g.world_size; i++) {
+            if (i != g.world_rank) {
+                disjoint_send_bufs.push_back(disjoint_send_buf);
+                disjoint_send_idx.push_back(i);
+                disjoint_send_buf[0] = disjoint_weight;
+                MPI_Isend(disjoint_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &disjoint_send_reqs[i]);
+            }
+
+        }
+        //receive and update local disjoint
+
+        for (int i = 0; i < g.world_size; i++) {
+            if (i!=g.world_rank) {
+                MPI_Status status;
+                double* recv_buf = new double[1];
+                disjoint_recv_bufs.push_back(recv_buf);
+
+                MPI_Recv(recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
+                disjoint_weight += recv_buf[0];
+            }
+        }
+
+
     return true;
 }
 

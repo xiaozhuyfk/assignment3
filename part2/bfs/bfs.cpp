@@ -45,9 +45,10 @@ void global_frontier_sync(DistGraph &g, DistFrontier &frontier, int *depths) {
 void bfs_step(DistGraph &g, int *depths,
         DistFrontier &current_frontier,
         DistFrontier &next_frontier) {
-
+    int offset = g.start_vertex;
     int frontier_size = current_frontier.get_local_frontier_size();
     Vertex* local_frontier = current_frontier.get_local_frontier();
+    std::set<Vertex> query_frontier_set;
 
     // keep in mind, this node owns the vertices with global ids:
     // g.start_vertex, g.start_vertex+1, g.start_vertex+2, etc...
@@ -59,7 +60,21 @@ void bfs_step(DistGraph &g, int *depths,
     /*
      * TODO: use top-down method
      */
-
+    for (auto& v : local_frontier) {
+        int new_depth = depths[v-offset]+1
+        for (auto& dest : g.outgoing_edges[v]) {
+            int rank = g.get_vertex_owner_rank(dest);
+            if (rank == world_rank && depths[dest] == NOT_VISITED_MARKER) {
+                // A local vertex unvisited
+                next_frontier.add(g.world_rank, dest, new_depth);
+                depths[dest] = new_depth;
+            } else if (rank != world_rank && query_frontier_set.find(dest) == query_frontier_set.end()) {
+                // A potential new vertex in other machine
+                query_frontier_set.insert(dest);
+                next_frontier.add(g.get_vertex_owner_rank(dest), dest, new_depth);
+            }
+        }
+    }
 }
 
 /*
