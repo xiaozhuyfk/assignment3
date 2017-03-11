@@ -183,7 +183,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
                 for(int j = 0; j < g.recv_size[i]; j++) {
                     double value = recv_buf[j];
                     int recv_vertex = g.recv_mapping[i][j];
-                    score_map[recv_vertex] = value;
+                    score_map[recv_vertex] += value;
                 }
             }
         }
