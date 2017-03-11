@@ -16,16 +16,15 @@
 double compute_disjoint_weight(
         DistGraph &g,
         double damping,
-        double *old,
-        std::vector<int> &disjoint) {
+        double *old) {
 
     int totalVertices = g.total_vertices();
 
     // Calculate local disjoint weight
     double disjoint_weight = 0.;
     #pragma omp parallel for reduction(+:disjoint_weight)
-    for (std::size_t j = 0; j < disjoint.size(); j++) {
-        disjoint_weight += damping * old[disjoint[j]] / totalVertices;
+    for (std::size_t j = 0; j < g.disjoint.size(); j++) {
+        disjoint_weight += damping * old[g.disjoint[j]] / totalVertices;
     }
 
     double *rbuf;
@@ -287,14 +286,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         solution[i] = equal_prob;
     }
 
-    //initialize local disjoint set
-    std::vector<int> disjoint;
-    for (int i = 0 ; i < vertices_per_process ; i++) {
-        if (!g.outgoing_edges[i].size()) {
-            disjoint.push_back(i); //push global vertex index
-        }
-    }
-
     // initialize vertex weights to uniform probability. Double
     // precision scores are used to avoid underflow for large graphs
 
@@ -305,7 +296,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         std::memcpy(old, solution, sizeof(double) * vertices_per_process);
 
         // Phase 1 : update disjoint weight
-        double disjoint_weight = compute_disjoint_weight(g, damping, old, disjoint);
+        double disjoint_weight = compute_disjoint_weight(g, damping, old);
 
         // Phase 2 : send scores across machine
         // compute_score_with_asynchronous_recv(g, solution, damping, old, disjoint_weight);

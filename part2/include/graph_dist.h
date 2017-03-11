@@ -41,10 +41,14 @@ public:
     std::map<int, int> world_incoming_size;
     std::map<int, int> world_outgoing_size;
 
+    // data structure for score retrieval
     std::vector<int> send_size;
     std::vector<int> recv_size;
     std::vector<std::vector<int>> send_mapping;
     std::vector<std::vector<int>> recv_mapping;
+
+    // disjoint local array
+    std::vector<int> disjoint;
 
     DistGraph(int _vertices_per_process, int _max_edges_per_vertex,
               GraphType _type, int _world_size, int _world_rank);
@@ -417,6 +421,13 @@ void DistGraph::setup() {
         std::vector<Vertex> in_queue(vertex_queue[mid].begin(), vertex_queue[mid].end());// = std::vector<Vertex>(vertex_queue[mid].begin(), vertex_queue[mid].end());
         std::sort(in_queue.begin(), in_queue.end());
         recv_mapping[mid] = in_queue;
+    }
+
+    // initialize disjoint array
+    for (int i = 0 ; i < vertices_per_process ; i++) {
+        if (!outgoing_edges[i].size()) {
+            disjoint.push_back(i); //push global vertex index
+        }
     }
 }
 
