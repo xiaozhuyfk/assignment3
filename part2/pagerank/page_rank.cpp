@@ -308,8 +308,8 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         double disjoint_weight = compute_disjoint_weight(g, damping, old, disjoint);
 
         // Phase 2 : send scores across machine
-        compute_score_with_asynchronous_recv(g, solution, damping, old, disjoint_weight);
-        //compute_score_across_node(g, solution, damping, old, disjoint_weight);
+        // compute_score_with_asynchronous_recv(g, solution, damping, old, disjoint_weight);
+        compute_score_across_node(g, solution, damping, old, disjoint_weight);
 
         // Phase 3 : Check for convergence
         double diff = compute_global_diff(g, solution, old);
