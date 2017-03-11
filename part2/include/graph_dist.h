@@ -386,13 +386,13 @@ void DistGraph::setup() {
         outgoing_edges[e.src-offset].push_back(e.dest);
     }
 
+    /*
     std::vector<std::set<Vertex>> vertex_queue = std::vector<std::set<Vertex>>(world_size, std::set<Vertex>());
     for (auto &e : out_edges) {
         int rank = get_vertex_owner_rank(e.dest);
         if (rank != world_rank) vertex_queue[rank].insert(e.dest % vertices_per_process);
     }
 
-    /*
     send_size = std::vector<int>(world_size, 0);
     send_mapping = std::vector<std::vector<int>>(world_size,
             std::vector<int>(vertices_per_process, -1));
