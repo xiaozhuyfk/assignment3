@@ -10,6 +10,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <set>
 
 #include "graph_dist_ref.h"
 
@@ -37,7 +38,7 @@ public:
     std::vector<std::vector<Vertex>> incoming_edges;
     std::vector<std::vector<Vertex>> outgoing_edges;
     std::map<int, int> world_incoming_size;
-    std::map<int, int> world_outgoing_size;
+    std::map<int, std::set<Vertex>> world_outgoing_map;
 
     DistGraph(int _vertices_per_process, int _max_edges_per_vertex,
               GraphType _type, int _world_size, int _world_rank);
@@ -363,7 +364,7 @@ void DistGraph::generate_graph_clustered() {
  */
 inline
 void DistGraph::setup() {
-    incoming_edges = std::vector<std::vector<Vertex>>(vertices_per_process);
+    incoming_edges = std::vector<std::vector<Vertex>>(total_vertices());
     outgoing_edges = std::vector<std::vector<Vertex>>(vertices_per_process);
     //world_incoming_edges = std::vector<std::vector<Vertex>>(world_size);
     //world_outgoing_edges = std::vector<std::vector<Vertex>>(world_size);
@@ -392,15 +393,15 @@ void DistGraph::setup() {
     for (auto &e: in_edges){
         int rank = get_vertex_owner_rank(e.src);
         world_incoming_size[rank]++;
-        incoming_edges[e.dest-offset].push_back(e.src); //local to global index
         //std::cout << world_rank << " " << e.dest << e.src << std::endl;
     }
     //std::cout << "come on" << std::endl;
     for (auto &e: out_edges){
         int rank = get_vertex_owner_rank(e.dest);
-        world_outgoing_size[rank]++;
+        world_outgoing_map[rank]++;
         outgoing_edges[e.src-offset].push_back(e.dest);//local to global index
         //std::cout << world_rank << " " << e.dest << e.src << std::endl;
+        incoming_edges[e.dest].push_back(e.src-offset); //GLOBAL to LOCAL index
     }
 }
 
