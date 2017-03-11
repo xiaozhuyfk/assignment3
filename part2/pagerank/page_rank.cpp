@@ -85,34 +85,29 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         }
         //pass local disjoint 
         double* disjoint_send_buf = new double[1];
-        
-        for (int i = 0; i < g.world_size; i++) {
-            if (i != g.world_rank) {
-                disjoint_send_buf[0] = disjoint_weight;
+        double* disjoint_recv_buf = new double[1];
+
+        if (g.world_rank) {
+            disjoint_send_buf[0] = disjoint_weight;
+            MPI_Isend(disjoint_send_buf, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &disjoint_send_reqs[0]);
+            MPI_Status status;
+            MPI_Recv(disjoint_recv_buf, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
+        } else {
+            for (int i = 0; i < g.world_size; i++) {
+                if (i!=g.world_rank) {
+                    MPI_Status status;
+                    MPI_Recv(disjoint_recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
+                    disjoint_weight += disjoint_recv_buf[0];
+                }
+            }
+            disjoint_send_buf[0] = disjoint_weight;
+            for (int i = 1; i < g.world_size; i++) { //exclude self
                 MPI_Isend(disjoint_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &disjoint_send_reqs[i]);
             }
-            
         }
-        //receive and update local disjoint
-
-        for (int i = 0; i < g.world_size; i++) {
-            if (i!=g.world_rank) {
-                MPI_Status status;
-                double* recv_buf = new double[1];
-                disjoint_recv_bufs.push_back(recv_buf);
-
-                MPI_Recv(recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
-                disjoint_weight += recv_buf[0];
-            }
-        }
-
         // clear disjoint buf
         delete(disjoint_send_buf);
-
-        for (size_t i = 0; i < disjoint_recv_bufs.size(); i++) {
-            delete(disjoint_recv_bufs[i]);
-        }
-
+        delete(disjoint_recv_buf);
         delete(disjoint_send_reqs);
         
         // Phase 2 : send scores across machine
@@ -196,33 +191,31 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         
         // Pass local converge score
         double* converge_send_buf = new double[1];
-        for (int i = 0; i < g.world_size; i++) {
-            if (i != g.world_rank) {
-                converge_send_buf[0] = diff;
-                MPI_Isend(converge_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &converge_send_reqs[i]);
-            }
-            
-        }
-        //receive and update local converge
-        for (int i = 0; i < g.world_size; i++) {
-            if (i!=g.world_rank) {
-                MPI_Status status;
-                double* recv_buf = new double[1];
-                converge_recv_bufs.push_back(recv_buf);
+        double* converge_recv_buf = new double[1];
 
-                MPI_Recv(recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
-                diff += recv_buf[0];
+
+        if (g.world_rank){
+            converge_send_buf[0] = diff;
+            MPI_Isend(converge_send_buf, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &converge_send_reqs[0]);
+            MPI_Status status;
+            MPI_Recv(converge_recv_buf, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
+            diff += converge_recv_buf[0];
+        } else {
+            for (int i = 1; i < g.world_size; i++) {
+                MPI_Status status;
+                MPI_Recv(converge_recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
+                diff += converge_recv_buf[0];
             }
-        }   
+            converge_send_buf[0] = diff;
+            for (int i = 1; i < g.world_size; i++) { //exclude self
+                MPI_Isend(converge_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &converge_send_reqs[i]);
+            }            
+        }
         converged = (diff < convergence);
 
         //clear converge buf
         delete(converge_send_buf);
-
-        for (size_t i = 0; i < converge_recv_bufs.size(); i++) {
-            delete(converge_recv_bufs[i]);
-        }
-
+        delete(converge_recv_buf);
         delete(converge_send_reqs);
     }
 
