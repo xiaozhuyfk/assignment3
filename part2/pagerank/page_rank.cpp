@@ -112,9 +112,10 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         std::map<Vertex, std::vector<double>> buf_map; // buffer to send to other worlds
         std::map<Vertex, double> score_map; // score to update to solution eventually
 
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (int i = 0; i < vertices_per_process; i++) {
             out_scores[i] = old[i] / static_cast<int>(g.outgoing_edges[i].size());
+            //std::cout << out_scores[i] << std::endl;
         }
 
         /*
@@ -135,27 +136,51 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
             }
         }*/
 
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (int v = 0; v < g.incoming_edges.size();  v++) {
-            int rank = g.get_vertex_owner_rank(v);
-            int sum;
+            //int rank = g.get_vertex_owner_rank(v);
+            double sum = 0;
             for (int in = 0; in < g.incoming_edges[v].size(); in++) {
-                sum += g.incoming_edges[v][in];
+                sum += out_scores[g.incoming_edges[v][in]];
+                //std::cout << " v is " << v << " " << sum << std::endl;
             }
             all_vtx_scores[v] = sum;
+            //std::cout << all_vtx_scores[v] << std::endl;
+        }
+        //iterate through ranks to compile send
+        //#pragma omp parallel for
+        for (int r = 0 ; r < g.world_size ; r++) {
+            std::vector<double> send_buf; 
+            int out_offset = r * vertices_per_process;
+            if (r==g.world_rank) {
+                for (auto v : g.world_outgoing_map[r]) {
+                    score_map[v-offset] = all_vtx_scores[v];
+                    //std::cout << v-offset << " " <<  score_map[v-offset] << std::endl;
+                }
+            } else {
+                for (auto v : g.world_outgoing_map[r]) {
+                    send_buf.push_back((v- out_offset) * 1.0);
+                    send_buf.push_back(all_vtx_scores[v]);
+                }
+                MPI_Isend(&send_buf,
+                        static_cast<int> (send_buf.size()),
+                        MPI_DOUBLE,
+                        r, 0, MPI_COMM_WORLD, &send_reqs[r]);
+            }
         }
 
-        for (int v = 0; v < g.incoming_edges.size(); v++) {
+        /*for (int v = 0; v < g.incoming_edges.size(); v++) {
             int rank = g.get_vertex_owner_rank(v);
             if (rank == g.world_rank) {
                 score_map[v-offset] = sum;
             } else {
                 score_map[]
             }
-        }
+        }*/
 
         // initialize buffer size
         // some tips for casting vector to array
+        /*
         #pragma omp parallel for
         for (int i = 0; i < g.world_size; i++) {
             if (i != g.world_rank && buf_map[i].size()) {
@@ -165,18 +190,18 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
                     MPI_DOUBLE,
                     i, 0, MPI_COMM_WORLD, &send_reqs[i]);
             }
-        }
+        }*/
 
         // Receive and update value
         for (int i = 0; i < g.world_size; i++) {
-            if (i!=g.world_rank && g.world_incoming_size[i]) {
+            if (i!=g.world_rank && g.world_incoming_map[i].size()) {
                 MPI_Status status;
-                double* recv_buf = new double[g.world_incoming_size[i] * 2];
+                double* recv_buf = new double[g.world_incoming_map[i].size() * 2];
                 recv_bufs.push_back(recv_buf);
 
-                MPI_Recv(recv_buf, g.world_incoming_size[i] * 2, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
+                MPI_Recv(recv_buf, g.world_incoming_map[i].size() * 2, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
 
-                for(int j = 0; j < g.world_incoming_size[i]; j++) {
+                for(int j = 0; j < g.world_incoming_map[i].size(); j++) {
                     double value = recv_buf[2 * j + 1];
                     int recv_vertex = (int) recv_buf[2 * j];
                     score_map[recv_vertex] += value;
@@ -185,9 +210,10 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         }
 
         // Update the final value to solution to prepare for next iteration
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (int i = 0; i < vertices_per_process ; i++) {
             solution[i] = (damping * score_map[i]) + (1.0 - damping) /  totalVertices + disjoint_weight;
+            //std::cout << "From : " << g.world_rank << " Vertex : " << i << " Score : " << solution[i] << std::endl;
         }
 
         //clear buf
