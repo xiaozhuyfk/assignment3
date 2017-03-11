@@ -15,14 +15,14 @@
 
 using Vertex = int;
 
-/* 
+/*
  * Representation of a distributed graph.  Each node in the cluster is
  * the "owner" of a subset of the vertices in the graph
- */ 
+ */
 class DistGraph {
 public:
     int vertices_per_process;   // vertices per cluster node
-    int max_edges_per_vertex;  
+    int max_edges_per_vertex;
 
     int world_size;
     int world_rank;
@@ -38,6 +38,11 @@ public:
     std::vector<std::vector<Vertex>> outgoing_edges;
     std::map<int, int> world_incoming_size;
     std::map<int, int> world_outgoing_size;
+
+    std::vector<int> send_size;
+    std::vector<int> recv_size;
+    std::vector<std::vector<int>> send_mapping;
+    std::vector<std::vector<int>> recv_mapping;
 
     DistGraph(int _vertices_per_process, int _max_edges_per_vertex,
               GraphType _type, int _world_size, int _world_rank);
@@ -99,7 +104,7 @@ DistGraph::DistGraph(int _vertices_per_process, int _max_edges_per_vertex,
 
 /*
  * get_vertex_owner_rank --
- * 
+ *
  * Returns the id of the node that is the owner of the vertex
  */
 inline
@@ -109,7 +114,7 @@ int DistGraph::get_vertex_owner_rank(Vertex v) {
 
 /*
  * total_vertices --
- * 
+ *
  * Returns to total number of vertices in the graph
  */
 inline
@@ -119,7 +124,7 @@ int DistGraph::total_vertices() {
 
 /*
  * get_incoming_edges --
- * 
+ *
  * uses inter-node communication to build a list of in_edges from the
  * distributed list of out_edges
  */
@@ -359,7 +364,7 @@ void DistGraph::generate_graph_clustered() {
 }
 
 /*
- * setup -- 
+ * setup --
  */
 inline
 void DistGraph::setup() {
@@ -401,6 +406,24 @@ void DistGraph::setup() {
         world_outgoing_size[rank]++;
         outgoing_edges[e.src-offset].push_back(e.dest);//local to global index
         //std::cout << world_rank << " " << e.dest << e.src << std::endl;
+    }
+
+    send_size = std::vector<int>(world_size, 0);
+    send_mapping = std::vector<std::vector<int>>(world_size,
+            std::vector<int>(vertices_per_process, -1));
+    for (auto &e : out_edges) {
+        int rank = get_vertex_owner_rank(e.dest);
+        send_mapping[rank][e.src-offset] = send_size[rank]++;
+    }
+
+    recv_size = std::vector<int>(world_size, 0);
+    recv_mapping = std::vector<std::vector<int>>(world_size,
+            std::vector<int>(vertices_per_process, -1));
+    for (auto &e : in_edges) {
+        int rank = get_vertex_owner_rank(e.src);
+        recv_size[rank]++;
+        int index = send_mapping[world_rank][e.dest - rank * vertices_per_process];
+        recv_mapping[rank][index] = e.dest;
     }
 }
 

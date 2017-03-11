@@ -121,28 +121,38 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
         // Phase 2 : send scores across machine
 
-        std::vector<double*> send_bufs;
+        std::vector<double *> send_bufs;
         std::vector<int> send_idx;
-        std::vector<double*> recv_bufs;
+        std::vector<double *> recv_bufs;
         MPI_Request* send_reqs = new MPI_Request[g.world_size];
 
-        std::map<Vertex, std::vector<double>> buf_map; // buffer to send to other worlds
-        std::map<Vertex, double> score_map; // score to update to solution eventually
+        std::vector<std::vector<double>> buffer_array = std::vector<std::vector<double>>(g.world_size); // buffer to send to other worlds
+        std::map<Vertex, double> score_map;
+        for (int rank = 0; rank < g.world_size; rank++) {
+            buffer_array[rank] = std::vector<double>(g.send_size[rank], 0.0);
+        }
+
         //prepare buffer in vector form
         for (int i = 0; i < vertices_per_process; i++) {
             double value = old[i] / static_cast<int>(g.outgoing_edges[i].size());
 
-            for (auto &out: g.outgoing_edges[i]){
+            for (auto &out : g.outgoing_edges[i]){
+                /*
                 int rank = g.get_vertex_owner_rank(out);
+                int out_offset = rank * vertices_per_process;
+                int index = g.send_mapping[rank][out - out_offset];
+                buffer_array[rank][index] += value;
+                */
                 if (rank != g.world_rank){
                     //need to send to other world
                     int out_offset = rank * vertices_per_process;
-                    buf_map[rank].push_back((out-out_offset)*1.0);
-                    buf_map[rank].push_back(value);
-                }
-                else{
+                    int index = g.send_mapping[rank][out - out_offset];
+                    buffer_array[rank][index] += value;
+                    //buf_map[rank].push_back((out-out_offset)*1.0);
+                    //buf_map[rank].push_back(value);
+                } else{
                     //update local score map on the destination vertex
-                    score_map[out-offset] += value;
+                    score_map[out - offset] += value;
                 }
             }
         }
@@ -151,11 +161,10 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         // some tips for casting vector to array
         for (int i = 0; i < g.world_size; i++) {
             if (i != g.world_rank) {
-                double* send_buf = &buf_map[i][0];
+                double* send_buf = &buffer_array[i][0];
                 send_bufs.push_back(send_buf);
-                send_idx.push_back(i);
                 MPI_Isend(send_buf,
-                    static_cast<int> (buf_map[i].size()),
+                    static_cast<int> (buffer_array[i].size()),
                     MPI_DOUBLE,
                     i, 0, MPI_COMM_WORLD, &send_reqs[i]);
             }
@@ -163,17 +172,17 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
         // Receive and update value
         for (int i = 0; i < g.world_size; i++) {
-            if (i!=g.world_rank) {
+            if (i != g.world_rank) {
                 MPI_Status status;
-                double* recv_buf = new double[g.world_incoming_size[i] * 2];
+                double* recv_buf = new double[g.recv_size[i]];
                 recv_bufs.push_back(recv_buf);
 
-                MPI_Recv(recv_buf, g.world_incoming_size[i] * 2, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
+                MPI_Recv(recv_buf, g.recv_size[i], MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
 
-                for(int j = 0; j < g.world_incoming_size[i]; j++) {
-                    double value = recv_buf[2 * j + 1];
-                    int recv_vertex = (int) recv_buf[2 * j];
-                    score_map[recv_vertex] += value;
+                for(int j = 0; j < g.recv_size[i]; j++) {
+                    double value = recv_buf[j];
+                    int recv_vertex = g.recv_mapping[i][j];
+                    score_map[recv_vertex] = value;
                 }
             }
         }
@@ -185,6 +194,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         }
 
         //clear buf
+        #pragma omp parallel for
         for (size_t i = 0; i < recv_bufs.size(); i++) {
             delete(recv_bufs[i]);
         }
