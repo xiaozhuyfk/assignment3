@@ -297,8 +297,9 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
     // ALL VERTICES in the graph, but feel free to modify as desired.
     // Keep in mind the `solution` array returned to the caller should
     // only have scores for the local vertices
+
     int totalVertices = g.total_vertices();
-    double equal_prob = 1.0/totalVertices;
+    double equal_prob = 1.0 / totalVertices;
 
     int vertices_per_process = g.vertices_per_process; //numNodes
 
@@ -308,7 +309,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         solution[i] = equal_prob;
     }
 
-    bool converged = false;
     //initialize local disjoint set
     std::vector<int> disjoint;
     for (int i = 0 ; i < vertices_per_process ; i++) {
@@ -322,6 +322,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
     double *old = (double *) malloc(sizeof(double) * vertices_per_process);
 
+    bool converged = false;
     while (!converged) {
         std::memcpy(old, solution, sizeof(double) * vertices_per_process);
 
@@ -329,8 +330,8 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         double disjoint_weight = compute_disjoint_weight(g, damping, old, disjoint);
 
         // Phase 2 : send scores across machine
-        compute_score_with_asynchronous_recv(g, solution, damping, old, disjoint_weight);
-        //compute_score_across_node(g, solution, damping, old, disjoint_weight);
+        // compute_score_with_asynchronous_recv(g, solution, damping, old, disjoint_weight);
+        compute_score_across_node(g, solution, damping, old, disjoint_weight);
 
         // Phase 3 : Check for convergence
         double diff = compute_global_diff(g, solution, old);
@@ -339,33 +340,4 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
     }
 
     free(old);
-
-    /*
-
-      Repeating basic pagerank pseudocode here for your convenience
-      (same as for part 1 of this assignment)
-
-    while (!converged) {
-
-        // compute score_new[vi] for all vertices belonging to this process
-        score_new[vi] = sum over all vertices vj reachable from incoming edges
-                          { score_old[vj] / number of edges leaving vj  }
-        score_new[vi] = (damping * score_new[vi]) + (1.0-damping) / totalVertices;
-
-        score_new[vi] += sum over all nodes vj with no outgoing edges
-                          { damping * score_old[vj] / totalVertices }
-
-        // compute how much per-node scores have changed
-        // quit once algorithm has converged
-
-        global_diff = sum over all vertices vi { abs(score_new[vi] - score_old[vi]) };
-        converged = (global_diff < convergence)
-
-        // Note that here, some communication between all the nodes is necessary
-        // so that all nodes have the same copy of old scores before beginning the
-        // next iteration. You should be careful to make sure that any data you send
-        // is received before you delete or modify the buffers you are sending.
-
-    }
-    */
 }
