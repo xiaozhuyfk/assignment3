@@ -143,6 +143,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
                 int index = g.send_mapping[rank][out - out_offset];
                 buffer_array[rank][index] += value;
                 */
+                int rank = g.get_vertex_owner_rank(out);
                 if (rank != g.world_rank){
                     //need to send to other world
                     int out_offset = rank * vertices_per_process;
