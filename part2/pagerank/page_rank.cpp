@@ -30,6 +30,7 @@ double compute_disjoint_weight(
         disjoint_weight += damping * old[disjoint[j]] / totalVertices;
     }
 
+    /*
     double *rbuf;
     if (g.world_rank == 0) {
        rbuf = new double[g.world_size * sizeof(double)];
@@ -49,9 +50,9 @@ double compute_disjoint_weight(
     }
 
     printf("%f\n", total_weight);
+    */
 
     //pass local disjoint
-    /*
     double* disjoint_send_buf = new double[1];
     double* disjoint_recv_buf = new double[1];
 
@@ -77,11 +78,8 @@ double compute_disjoint_weight(
     delete(disjoint_send_buf);
     delete(disjoint_recv_buf);
     delete(disjoint_send_reqs);
-    */
 
-
-
-    return total_weight;
+    return disjoint_weight;
 }
 
 
