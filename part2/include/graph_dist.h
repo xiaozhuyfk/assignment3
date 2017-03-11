@@ -414,8 +414,8 @@ void DistGraph::setup() {
             std::vector<int>(vertices_per_process, -1));
     for (auto &e : out_edges) {
         int rank = get_vertex_owner_rank(e.dest);
-        if (send_mapping[rank][e.src-offset] < 0) {
-            send_mapping[rank][e.src-offset] = send_size[rank]++;
+        if (send_mapping[rank][e.dest % vertices_per_process] < 0) {
+            send_mapping[rank][e.dest % vertices_per_process] = send_size[rank]++;
         }
     }
 
