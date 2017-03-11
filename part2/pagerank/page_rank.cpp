@@ -181,6 +181,7 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
     }
 
     delete(converge_send_reqs);
+    return diff;
 
     /*
     int vertices_per_process = g.vertices_per_process;
