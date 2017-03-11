@@ -27,12 +27,14 @@ double compute_disjoint_weight(
         disjoint_weight += damping * old[g.disjoint[j]] / totalVertices;
     }
 
+    // gather local disjoint weight to root node
     double *rbuf;
     if (g.world_rank == 0) {
        rbuf = new double[g.world_size * sizeof(double)];
     }
     MPI_Gather(&disjoint_weight, 1, MPI_DOUBLE, rbuf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
+    // sum the distributed disjoint weight
     double total_weight;
     if (g.world_rank == 0) {
         #pragma omp parallel for reduction(+:total_weight)
@@ -41,6 +43,7 @@ double compute_disjoint_weight(
         }
     }
 
+    // broadcast total disjoint weight to all nodes
     MPI_Bcast(&total_weight, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     if (g.world_rank == 0) {
         delete(rbuf);
@@ -59,12 +62,14 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
         diff += std::abs(solution[i] - old[i]);
     }
 
+    // gather the local difference to root node
     double *rbuf;
     if (g.world_rank == 0) {
        rbuf = new double[g.world_size * sizeof(double)];
     }
     MPI_Gather(&diff, 1, MPI_DOUBLE, rbuf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
+    // compute the global diff (sum local diffs) on root node
     double global_diff;
     if (g.world_rank == 0) {
         #pragma omp parallel for reduction(+:global_diff)
@@ -73,6 +78,7 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
         }
     }
 
+    // broadcast global diff to all nodes
     MPI_Bcast(&global_diff, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     if (g.world_rank == 0) {
         delete(rbuf);
@@ -276,9 +282,8 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
     // only have scores for the local vertices
 
     int totalVertices = g.total_vertices();
+    int vertices_per_process = g.vertices_per_process;
     double equal_prob = 1.0 / totalVertices;
-
-    int vertices_per_process = g.vertices_per_process; //numNodes
 
     // initialize per-vertex scores
     #pragma omp parallel for
