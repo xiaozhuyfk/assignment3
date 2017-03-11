@@ -48,6 +48,7 @@ double compute_disjoint_weight(
         delete(rbuf);
     }
 
+    printf("%f\n", total_weight);
 
     //pass local disjoint
     /*
