@@ -9,6 +9,7 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include <map>
 
 #include "graph_dist_ref.h"
 
