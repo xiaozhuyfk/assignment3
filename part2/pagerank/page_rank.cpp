@@ -30,7 +30,25 @@ double compute_disjoint_weight(
         disjoint_weight += damping * old[disjoint[j]] / totalVertices;
     }
 
+    double *rbuf;
+    MPI_Comm_rank( comm, myrank);
+    if (g.world_rank == 0) {
+       rbuf = new int[g.world_size * sizeof(double)];
+    }
+    MPI_Gather(&disjoint_weight, 1, MPI_DOUBLE, rbuf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    double total_weight;
+    if (g.world_rank == 0) {
+        for (int mid = 0; mid < g.world_size; mid++) {
+            total_weight += rbuf[mid];
+        }
+    }
+
+    MPI_Bcast(&total_weight, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+
     //pass local disjoint
+    /*
     double* disjoint_send_buf = new double[1];
     double* disjoint_recv_buf = new double[1];
 
@@ -56,8 +74,11 @@ double compute_disjoint_weight(
     delete(disjoint_send_buf);
     delete(disjoint_recv_buf);
     delete(disjoint_send_reqs);
+    */
 
-    return disjoint_weight;
+
+
+    return total_weight;
 }
 
 
