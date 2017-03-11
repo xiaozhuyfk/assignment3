@@ -31,7 +31,6 @@ double compute_disjoint_weight(
     }
 
     double *rbuf;
-    MPI_Comm_rank( comm, myrank);
     if (g.world_rank == 0) {
        rbuf = new int[g.world_size * sizeof(double)];
     }
