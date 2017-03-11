@@ -386,7 +386,6 @@ void DistGraph::setup() {
         outgoing_edges[e.src-offset].push_back(e.dest);
     }
 
-    /*
     std::vector<std::set<Vertex>> vertex_queue = std::vector<std::set<Vertex>>(world_size, std::set<Vertex>());
     for (auto &e : out_edges) {
         int rank = get_vertex_owner_rank(e.dest);
@@ -419,10 +418,6 @@ void DistGraph::setup() {
         std::sort(in_queue.begin(), in_queue.end());
         recv_mapping[mid] = in_queue;
     }
-
-    printf("Done with setup.\n");
-    */
-
 }
 
 #endif
