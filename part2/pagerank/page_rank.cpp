@@ -19,6 +19,7 @@ struct edge_package {
     double score;
 };
 
+/*
 double compute_disjoint_weight(DistGraph &g, double damping) {
     std::memcpy(old, solution, sizeof(double) * vertices_per_process);
     std::vector<double*> disjoint_send_bufs;
@@ -70,6 +71,7 @@ double compute_disjoint_weight(DistGraph &g, double damping) {
 
     return disjoint_weight;
 }
+*/
 
 /*
  * pageRank--
