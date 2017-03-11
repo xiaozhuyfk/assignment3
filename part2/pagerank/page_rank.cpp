@@ -19,6 +19,7 @@ double compute_disjoint_weight(
         double *old,
         std::vector<int> &disjoint) {
 
+    /*
     int totalVertices = g.total_vertices();
     std::vector<double*> disjoint_send_bufs;
     std::vector<int> disjoint_send_idx;
@@ -67,12 +68,11 @@ double compute_disjoint_weight(
 
     delete(disjoint_send_reqs);
     return disjoint_weight;
+    */
 
-
-    /*
     int totalVertices = g.total_vertices();
-    std::vector<double*> disjoint_recv_bufs;
-    MPI_Request* disjoint_send_reqs = new MPI_Request[g.world_size];
+    //std::vector<double*> disjoint_recv_bufs;
+    //MPI_Request* disjoint_send_reqs = new MPI_Request[g.world_size];
 
     // Calculate local disjoint weight
     double disjoint_weight = 0.;
@@ -99,8 +99,9 @@ double compute_disjoint_weight(
         delete(rbuf);
     }
 
-    printf("%f\n", total_weight);
+    return total_weight;
 
+    /*
     //pass local disjoint
     double* disjoint_send_buf = new double[1];
     double* disjoint_recv_buf = new double[1];
@@ -180,7 +181,6 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
     }
 
     delete(converge_send_reqs);
-    return diff;
 
     /*
     int vertices_per_process = g.vertices_per_process;
