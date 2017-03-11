@@ -371,42 +371,18 @@ inline
 void DistGraph::setup() {
     incoming_edges = std::vector<std::vector<Vertex>>(vertices_per_process);
     outgoing_edges = std::vector<std::vector<Vertex>>(vertices_per_process);
-    //world_incoming_edges = std::vector<std::vector<Vertex>>(world_size);
-    //world_outgoing_edges = std::vector<std::vector<Vertex>>(world_size);
     int offset = world_rank * vertices_per_process;
-    /*
-    for (auto &e: in_edges){
-        incoming_edges[e.dest].insert(e.src); //map local destination to global source
-        int rank = get_vertex_owner_rank(e.src);
-        in_map_set[rank].insert(e.src);
-    }
-    for (int i = 0; i < world_size;i++) {
-        std::vector<Vertex> v(in_map_set[i].begin(),in_map_set[i].end());
-        std::sort(v.begin(),v.end());
-        incoming_world_map[i] = v;
-    }
-    for (auto &e: out_edges){
-        outgoing_edges[e.src].insert(e.dest); //map local source to global destination
-        int rank = get_vertex_owner_rank(e.dest);
-        out_map_set[rank].insert(e.dest);
-    }
-    for (int i = 0; i < world_size;i++) {
-        std::vector<Vertex> v(out_map_set[i].begin(),out_map_set[i].end());
-        std::sort(v.begin(),v.end());
-        outgoing_world_map[i] = v;
-    }*/
+
     for (auto &e: in_edges){
         int rank = get_vertex_owner_rank(e.src);
         world_incoming_size[rank]++;
-        incoming_edges[e.dest-offset].push_back(e.src); //local to global index
-        //std::cout << world_rank << " " << e.dest << e.src << std::endl;
+        incoming_edges[e.dest-offset].push_back(e.src);
     }
-    //std::cout << "come on" << std::endl;
+
     for (auto &e: out_edges){
         int rank = get_vertex_owner_rank(e.dest);
         world_outgoing_size[rank]++;
-        outgoing_edges[e.src-offset].push_back(e.dest);//local to global index
-        //std::cout << world_rank << " " << e.dest << e.src << std::endl;
+        outgoing_edges[e.src-offset].push_back(e.dest);
     }
 
     send_size = std::vector<int>(world_size, 0);
