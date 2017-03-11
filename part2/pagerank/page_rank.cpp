@@ -32,7 +32,7 @@ double compute_disjoint_weight(
 
     double *rbuf;
     if (g.world_rank == 0) {
-       rbuf = new int[g.world_size * sizeof(double)];
+       rbuf = new double[g.world_size * sizeof(double)];
     }
     MPI_Gather(&disjoint_weight, 1, MPI_DOUBLE, rbuf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
@@ -44,6 +44,9 @@ double compute_disjoint_weight(
     }
 
     MPI_Bcast(&total_weight, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    if (g.world_rank == 0) {
+        delete(rbuf);
+    }
 
 
     //pass local disjoint
