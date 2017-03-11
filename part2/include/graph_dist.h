@@ -11,6 +11,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <algorithm>
 
 #include "graph_dist_ref.h"
 
