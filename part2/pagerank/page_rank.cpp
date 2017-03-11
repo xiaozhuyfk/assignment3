@@ -72,8 +72,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
     while (!converged) {
         std::memcpy(old, solution, sizeof(double) * vertices_per_process);
-        std::vector<double*> disjoint_send_bufs;
-        std::vector<int> disjoint_send_idx;
         std::vector<double*> disjoint_recv_bufs;
 
         MPI_Request* disjoint_send_reqs = new MPI_Request[g.world_size];
@@ -90,8 +88,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         
         for (int i = 0; i < g.world_size; i++) {
             if (i != g.world_rank) {
-                disjoint_send_bufs.push_back(disjoint_send_buf);
-                disjoint_send_idx.push_back(i);
                 disjoint_send_buf[0] = disjoint_weight;
                 MPI_Isend(disjoint_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &disjoint_send_reqs[i]);
             }
@@ -120,9 +116,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         delete(disjoint_send_reqs);
         
         // Phase 2 : send scores across machine
-        
-        std::vector<double*> send_bufs;
-        std::vector<int> send_idx;
         std::vector<double*> recv_bufs;
         MPI_Request* send_reqs = new MPI_Request[g.world_size];
 
@@ -152,8 +145,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         for (int i = 0; i < g.world_size; i++) {
             if (i != g.world_rank) {
                 double* send_buf = &buf_map[i][0];
-                send_bufs.push_back(send_buf);
-                send_idx.push_back(i);
                 MPI_Isend(send_buf, 
                     static_cast<int> (buf_map[i].size()), 
                     MPI_DOUBLE, 
@@ -192,8 +183,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         delete(send_reqs);
 
         // Phase 3 : Check for convergence
-        std::vector<double*> converge_send_bufs;
-        std::vector<int> converge_send_idx;
         std::vector<double*> converge_recv_bufs;
 
         MPI_Request* converge_send_reqs = new MPI_Request[g.world_size];
@@ -209,8 +198,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         double* converge_send_buf = new double[1];
         for (int i = 0; i < g.world_size; i++) {
             if (i != g.world_rank) {
-                converge_send_bufs.push_back(converge_send_buf);
-                converge_send_idx.push_back(i);
                 converge_send_buf[0] = diff;
                 MPI_Isend(converge_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &converge_send_reqs[i]);
             }
