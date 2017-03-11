@@ -19,7 +19,6 @@ double compute_disjoint_weight(
         double *old,
         std::vector<int> &disjoint) {
 
-    /*
     int totalVertices = g.total_vertices();
     std::vector<double*> disjoint_send_bufs;
     std::vector<int> disjoint_send_idx;
@@ -68,8 +67,8 @@ double compute_disjoint_weight(
 
     delete(disjoint_send_reqs);
     return disjoint_weight;
-    */
 
+    /*
     int totalVertices = g.total_vertices();
     //std::vector<double*> disjoint_recv_bufs;
     //MPI_Request* disjoint_send_reqs = new MPI_Request[g.world_size];
@@ -100,36 +99,6 @@ double compute_disjoint_weight(
     }
 
     return total_weight;
-
-    /*
-    //pass local disjoint
-    double* disjoint_send_buf = new double[1];
-    double* disjoint_recv_buf = new double[1];
-
-    if (g.world_rank) {
-        disjoint_send_buf[0] = disjoint_weight;
-        MPI_Isend(disjoint_send_buf, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &disjoint_send_reqs[0]);
-        MPI_Status status;
-        MPI_Recv(disjoint_recv_buf, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
-    } else {
-        for (int i = 0; i < g.world_size; i++) {
-            if (i!=g.world_rank) {
-                MPI_Status status;
-                MPI_Recv(disjoint_recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
-                disjoint_weight += disjoint_recv_buf[0];
-            }
-        }
-        disjoint_send_buf[0] = disjoint_weight;
-        for (int i = 1; i < g.world_size; i++) { //exclude self
-            MPI_Isend(disjoint_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &disjoint_send_reqs[i]);
-        }
-    }
-    // clear disjoint buf
-    delete(disjoint_send_buf);
-    delete(disjoint_recv_buf);
-    delete(disjoint_send_reqs);
-
-    return disjoint_weight;
     */
 }
 
