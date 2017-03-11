@@ -34,6 +34,8 @@ void global_frontier_sync(DistGraph &g, DistFrontier &frontier, int *depths) {
     std::vector<int*> send_bufs;
     std::vector<int> send_idx;
     std::vector<int*> recv_bufs;
+    std::set<int> recv_vertex_set;
+    std::vector<int> recv_not_updated;
 
     MPI_Request* send_reqs = new MPI_Request[world_size];
     MPI_Status* probe_status = new MPI_Status[world_size];
@@ -41,6 +43,7 @@ void global_frontier_sync(DistGraph &g, DistFrontier &frontier, int *depths) {
     for (int i = 0; i < world_size; i++) {
         if (i != world_rank) {
             int* send_buf = new int[frontier.sizes[i] * 2];
+            //std::cout << "send_buf size" << frontier.sizes[i] << "of array " << i <<std::endl;
 
             send_bufs.push_back(send_buf);
             send_idx.push_back(i);
@@ -55,13 +58,6 @@ void global_frontier_sync(DistGraph &g, DistFrontier &frontier, int *depths) {
                       i, 0, MPI_COMM_WORLD, &send_reqs[i]);
         }
     }
-
-    // Make sure all the Isends are received before local modification.
-    for (size_t i = 0; i < send_bufs.size(); i++) {
-        MPI_Status status;
-        MPI_Wait(&send_reqs[send_idx[i]], &status);
-        delete(send_bufs[i]);
-    }
     // Receive from all other buffers
     for (int i = 0; i < world_size; i++) {
         if (i != world_rank) {
@@ -72,26 +68,37 @@ void global_frontier_sync(DistGraph &g, DistFrontier &frontier, int *depths) {
 
             int* recv_buf = new int[num_vals];
             recv_bufs.push_back(recv_buf);
-
             MPI_Recv(recv_buf, num_vals, MPI_INT, probe_status[i].MPI_SOURCE,
                      probe_status[i].MPI_TAG, MPI_COMM_WORLD, &status);
-            //std::cout << "receive " << num_vals << std::endl;
             for (int j = 0; j < num_vals; j+=2) {
                 assert(g.get_vertex_owner_rank(recv_buf[j]) == world_rank);
-                if (depths[recv_buf[j]-offset] == NOT_VISITED_MARKER) {
-                    frontier.add(world_rank, recv_buf[j], recv_buf[j+1]);
-                    depths[recv_buf[j]-offset] = recv_buf[j+1];
+                Vertex v = recv_buf[j];
+                if (depths[v-offset] == NOT_VISITED_MARKER && recv_vertex_set.find(v) == recv_vertex_set.end()) {
+                    recv_vertex_set.insert(v);
+                    recv_not_updated.push_back(v);
+                    recv_not_updated.push_back(recv_buf[j+1]);
                     //std::cout << "receive " << recv_buf[j] << " with depth " << recv_buf[j+1] << std::endl;
                 }
             }
         }
     }
+    // Make sure all the Isends are received before local modification.
+    for (size_t i = 0; i < send_bufs.size(); i++) {
+        MPI_Status status;
+        MPI_Wait(&send_reqs[send_idx[i]], &status);
+        delete(send_bufs[i]);
+    }
     for (size_t i = 0; i < recv_bufs.size(); i++) {
         delete(recv_bufs[i]);
     }
-
     delete(send_reqs);
     delete(probe_status);
+
+    for (std::vector<int>::size_type j = 0; j != recv_not_updated.size(); j+=2) {
+        frontier.add(world_rank, recv_not_updated[j], recv_not_updated[j+1]);
+        depths[recv_not_updated[j]-offset] = recv_not_updated[j+1];
+    }
+
 }
 
 /*
@@ -173,8 +180,13 @@ void bfs(DistGraph &g, int *depths) {
         current_frontier.add(g.get_vertex_owner_rank(ROOT_NODE_ID), ROOT_NODE_ID, 0);
         depths[ROOT_NODE_ID - offset] = 0;
     }
-
+    //int counter = 0;
     while (true) {
+        
+        //counter++;
+        //if (!g.world_rank){
+            //std::cout << counter << std::endl;
+        //}
 
         bfs_step(g, depths, *cur_front, *next_front);
 
@@ -185,7 +197,6 @@ void bfs(DistGraph &g, int *depths) {
 
         // exchange frontier information
         global_frontier_sync(g, *next_front, depths);
-        //depths++;
 
         DistFrontier *temp = cur_front;
         cur_front = next_front;
