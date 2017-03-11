@@ -43,7 +43,6 @@ void global_frontier_sync(DistGraph &g, DistFrontier &frontier, int *depths) {
     for (int i = 0; i < world_size; i++) {
         if (i != world_rank) {
             int* send_buf = new int[frontier.sizes[i] * 2];
-            //std::cout << "send_buf size" << frontier.sizes[i] << "of array " << i <<std::endl;
 
             send_bufs.push_back(send_buf);
             send_idx.push_back(i);
@@ -51,7 +50,6 @@ void global_frontier_sync(DistGraph &g, DistFrontier &frontier, int *depths) {
             for (int j = 0; j < frontier.sizes[i]; j++) {
                 send_buf[2*j] = frontier.elements[i][j];
                 send_buf[2*j+1] = frontier.depths[i][j];
-                //std::cout << "send " << send_buf[2*j] << std::endl;
             }
 
             MPI_Isend(send_buf, frontier.sizes[i] * 2, MPI_INT,
@@ -77,7 +75,6 @@ void global_frontier_sync(DistGraph &g, DistFrontier &frontier, int *depths) {
                     recv_vertex_set.insert(v);
                     recv_not_updated.push_back(v);
                     recv_not_updated.push_back(recv_buf[j+1]);
-                    //std::cout << "receive " << recv_buf[j] << " with depth " << recv_buf[j+1] << std::endl;
                 }
             }
         }
@@ -135,18 +132,14 @@ void bfs_step(DistGraph &g, int *depths,
         int new_depth = depths[local_idx]+1;
         for (auto& dest : g.outgoing_edges[local_idx]) {
             int rank = g.get_vertex_owner_rank(dest);
-            //std::cout << rank << " " << dest << std::endl;
             if (rank == g.world_rank && depths[dest-offset] == NOT_VISITED_MARKER) {
                 // A local vertex unvisited
                 next_frontier.add(g.world_rank, dest, new_depth);
                 depths[dest-offset] = new_depth;
-                //std::cout << "From " << i+offset << " to " << dest << " with depth " << depths[dest-offset] << std::endl;
             } else if (rank != g.world_rank && query_frontier_set.find(dest) == query_frontier_set.end()) {
                 // A potential new vertex in other machine
                 query_frontier_set.insert(dest);
                 next_frontier.add(g.get_vertex_owner_rank(dest), dest, new_depth);
-                //std::cout << "From " << i+offset << " to " << dest << " with depth " << new_depth << std::endl;
-                //std::cout << next_frontier.sizes[g.get_vertex_owner_rank(dest)] << std::endl;
             }
         }
     }
@@ -180,13 +173,7 @@ void bfs(DistGraph &g, int *depths) {
         current_frontier.add(g.get_vertex_owner_rank(ROOT_NODE_ID), ROOT_NODE_ID, 0);
         depths[ROOT_NODE_ID - offset] = 0;
     }
-    //int counter = 0;
     while (true) {
-        
-        //counter++;
-        //if (!g.world_rank){
-            //std::cout << counter << std::endl;
-        //}
 
         bfs_step(g, depths, *cur_front, *next_front);
 

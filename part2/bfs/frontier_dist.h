@@ -100,9 +100,7 @@ bool DistFrontier::is_empty() {
     // true if the cluster-wide frontier is zero
     int frontier_check = 0;
     for (int i = 0; i < world_size; i++) {
-        //std::cout << i << std::endl;
         if (sizes[i]) {
-            //std::cout << i << " " << sizes[i] << std::endl;
             frontier_check = 1;
             break;
         }
@@ -125,7 +123,6 @@ bool DistFrontier::is_empty() {
             counter += recv_buf[0];
         }
         counter += frontier_check; // Add self frontier_check result for master node
-        //std::cout << counter << std::endl;
         send_buf[0] = counter;
         for (int i = 1; i < world_size; i++) {
             MPI_Isend(send_buf,1,MPI_INT, i , 0, MPI_COMM_WORLD, &send_reqs[i]);
