@@ -385,6 +385,25 @@ void DistGraph::setup() {
         outgoing_edges[e.src-offset].push_back(e.dest);
     }
 
+    std::vector<std::set<Vertex>> vertex_queue = std::vector<std::set<Vertex>>(world_size, std::set<Vertex>());
+    for (auto &e : out_edges) {
+        int rank = get_vertex_owner_rank(e.dest);
+        vertex_queue[rank].insert(e.dest % vertices_per_process);
+    }
+
+    send_size = std::vector<int>(world_size, 0);
+    send_mapping = std::vector<std::vector<int>>(world_size,
+            std::vector<int>(vertices_per_process, -1));
+    for (int mid = 0; mid < world_size; mid++) {
+        send_size[mid] = vertex_queue[mid].size();
+        std::vector<Vertex> out_queue = std::vector<Vertex>(vertex_queue[mid].begin(), vertex_queue[mid].end());
+        std::sort(out_queue.begin(), out_queue.end());
+        for (int i = 0; i < out_queue.size(); i++) {
+            send_mapping[mid][out_queue[i]] = i;
+        }
+    }
+
+    /*
     send_size = std::vector<int>(world_size, 0);
     send_mapping = std::vector<std::vector<int>>(world_size,
             std::vector<int>(vertices_per_process, -1));
@@ -395,10 +414,24 @@ void DistGraph::setup() {
             send_mapping[rank][e.dest % vertices_per_process] = send_size[rank]++;
         }
     }
+    */
+
+    vertex_queue = std::vector<std::set<Vertex>>(world_size, std::set<Vertex>());
+    for (auto &e : in_edges) {
+        int rank = get_vertex_owner_rank(e.src);
+        vertex_queue[rank].insert(e.dest % vertices_per_process);
+    }
 
     recv_size = std::vector<int>(world_size, 0);
-    recv_mapping = std::vector<std::vector<int>>(world_size,
-            std::vector<int>(vertices_per_process, -1));
+    recv_mapping = std::vector<std::vector<int>>(world_size);
+    for (int mid = 0; mid < world_size; mid++) {
+        recv_size[mid] = vertex_queue[mid].size();
+        std::vector<Vertex> in_queue = std::vector<Vertex>(vertex_queue[mid].begin(), vertex_queue[mid].end());
+        std::sort(in_queue.begin(), in_queue.end());
+        recv_mapping[mid] = in_queue;
+    }
+
+    /*
     for (auto &e : in_edges) {
         int rank = get_vertex_owner_rank(e.src);
         int index = send_mapping[world_rank][e.dest % vertices_per_process];
@@ -407,6 +440,7 @@ void DistGraph::setup() {
             recv_size[rank]++;
         }
     }
+    */
 }
 
 #endif
