@@ -12,13 +12,6 @@
 
 #include "../include/graph_dist.h"
 
-typedef struct edge_package edge_package;
-
-struct edge_package {
-    int recv_vertex;
-    double score;
-};
-
 /*
  * pageRank--
  *
@@ -48,6 +41,8 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
     double equal_prob = 1.0/totalVertices;
 
     int vertices_per_process = g.vertices_per_process; //numNodes
+    double out_scores[vertices_per_process]; 
+    double all_vtx_scores[totalVertices];
 
     // initialize per-vertex scores
     #pragma omp parallel for
@@ -72,8 +67,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
     while (!converged) {
         std::memcpy(old, solution, sizeof(double) * vertices_per_process);
-        std::vector<double*> disjoint_send_bufs;
-        std::vector<int> disjoint_send_idx;
         std::vector<double*> disjoint_recv_bufs;
 
         MPI_Request* disjoint_send_reqs = new MPI_Request[g.world_size];
@@ -87,51 +80,46 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         }
         //pass local disjoint
         double* disjoint_send_buf = new double[1];
+        double* disjoint_recv_buf = new double[1];
 
-        for (int i = 0; i < g.world_size; i++) {
-            if (i != g.world_rank) {
-                disjoint_send_bufs.push_back(disjoint_send_buf);
-                disjoint_send_idx.push_back(i);
-                disjoint_send_buf[0] = disjoint_weight;
+        if (g.world_rank) {
+            disjoint_send_buf[0] = disjoint_weight;
+            MPI_Isend(disjoint_send_buf, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &disjoint_send_reqs[0]);
+            MPI_Status status;
+            MPI_Recv(disjoint_recv_buf, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
+        } else {
+            for (int i = 0; i < g.world_size; i++) {
+                if (i!=g.world_rank) {
+                    MPI_Status status;
+                    MPI_Recv(disjoint_recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
+                    disjoint_weight += disjoint_recv_buf[0];
+                }
+            }
+            disjoint_send_buf[0] = disjoint_weight;
+            for (int i = 1; i < g.world_size; i++) { //exclude self
                 MPI_Isend(disjoint_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &disjoint_send_reqs[i]);
             }
-
         }
-        //receive and update local disjoint
-
-        for (int i = 0; i < g.world_size; i++) {
-            if (i!=g.world_rank) {
-                MPI_Status status;
-                double* recv_buf = new double[1];
-                disjoint_recv_bufs.push_back(recv_buf);
-
-                MPI_Recv(recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
-                disjoint_weight += recv_buf[0];
-            }
-        }
-
         // clear disjoint buf
         delete(disjoint_send_buf);
-
-        for (size_t i = 0; i < disjoint_recv_bufs.size(); i++) {
-            delete(disjoint_recv_bufs[i]);
-        }
-
+        delete(disjoint_recv_buf);
         delete(disjoint_send_reqs);
 
         // Phase 2 : send scores across machine
-
-        std::vector<double*> send_bufs;
-        std::vector<int> send_idx;
         std::vector<double*> recv_bufs;
         MPI_Request* send_reqs = new MPI_Request[g.world_size];
 
         std::map<Vertex, std::vector<double>> buf_map; // buffer to send to other worlds
         std::map<Vertex, double> score_map; // score to update to solution eventually
-        //prepare buffer in vector form
-        for (int i = 0; i < vertices_per_process; i++) {
-            double value = old[i] / static_cast<int>(g.outgoing_edges[i].size());
 
+        #pragma omp parallel for
+        for (int i = 0; i < vertices_per_process; i++) {
+            out_scores[i] = old[i] / static_cast<int>(g.outgoing_edges[i].size());
+        }
+
+        /*
+        for (int i = 0; i < vertices_per_process; i++) {
+            double value = out_scores[i];
             for (auto &out: g.outgoing_edges[i]){
                 int rank = g.get_vertex_owner_rank(out);
                 if (rank != g.world_rank){
@@ -145,15 +133,33 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
                     score_map[out-offset] += value;
                 }
             }
+        }*/
+
+        #pragma omp parallel for
+        for (int v = 0; v < g.incoming_edges.size();  v++) {
+            int rank = g.get_vertex_owner_rank(v);
+            int sum;
+            for (int in = 0; in < g.incoming_edges[v].size(); in++) {
+                sum += g.incoming_edges[v][in];
+            }
+            all_vtx_scores[v] = sum;
+        }
+
+        for (int v = 0; v < g.incoming_edges.size(); v++) {
+            int rank = g.get_vertex_owner_rank(v);
+            if (rank == g.world_rank) {
+                score_map[v-offset] = sum;
+            } else {
+                score_map[]
+            }
         }
 
         // initialize buffer size
         // some tips for casting vector to array
+        #pragma omp parallel for
         for (int i = 0; i < g.world_size; i++) {
-            if (i != g.world_rank) {
+            if (i != g.world_rank && buf_map[i].size()) {
                 double* send_buf = &buf_map[i][0];
-                send_bufs.push_back(send_buf);
-                send_idx.push_back(i);
                 MPI_Isend(send_buf,
                     static_cast<int> (buf_map[i].size()),
                     MPI_DOUBLE,
@@ -163,7 +169,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
         // Receive and update value
         for (int i = 0; i < g.world_size; i++) {
-            if (i!=g.world_rank) {
+            if (i!=g.world_rank && g.world_incoming_size[i]) {
                 MPI_Status status;
                 double* recv_buf = new double[g.world_incoming_size[i] * 2];
                 recv_bufs.push_back(recv_buf);
@@ -185,6 +191,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         }
 
         //clear buf
+        #pragma omp parallel for
         for (size_t i = 0; i < recv_bufs.size(); i++) {
             delete(recv_bufs[i]);
         }
@@ -192,8 +199,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         delete(send_reqs);
 
         // Phase 3 : Check for convergence
-        std::vector<double*> converge_send_bufs;
-        std::vector<int> converge_send_idx;
         std::vector<double*> converge_recv_bufs;
 
         MPI_Request* converge_send_reqs = new MPI_Request[g.world_size];
@@ -207,35 +212,31 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
         // Pass local converge score
         double* converge_send_buf = new double[1];
-        for (int i = 0; i < g.world_size; i++) {
-            if (i != g.world_rank) {
-                converge_send_bufs.push_back(converge_send_buf);
-                converge_send_idx.push_back(i);
-                converge_send_buf[0] = diff;
-                MPI_Isend(converge_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &converge_send_reqs[i]);
-            }
+        double* converge_recv_buf = new double[1];
 
-        }
-        //receive and update local converge
-        for (int i = 0; i < g.world_size; i++) {
-            if (i!=g.world_rank) {
+
+        if (g.world_rank){
+            converge_send_buf[0] = diff;
+            MPI_Isend(converge_send_buf, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &converge_send_reqs[0]);
+            MPI_Status status;
+            MPI_Recv(converge_recv_buf, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
+            diff += converge_recv_buf[0];
+        } else {
+            for (int i = 1; i < g.world_size; i++) {
                 MPI_Status status;
-                double* recv_buf = new double[1];
-                converge_recv_bufs.push_back(recv_buf);
-
-                MPI_Recv(recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
-                diff += recv_buf[0];
+                MPI_Recv(converge_recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
+                diff += converge_recv_buf[0];
+            }
+            converge_send_buf[0] = diff;
+            for (int i = 1; i < g.world_size; i++) { //exclude self
+                MPI_Isend(converge_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &converge_send_reqs[i]);
             }
         }
         converged = (diff < convergence);
 
         //clear converge buf
         delete(converge_send_buf);
-
-        for (size_t i = 0; i < converge_recv_bufs.size(); i++) {
-            delete(converge_recv_bufs[i]);
-        }
-
+        delete(converge_recv_buf);
         delete(converge_send_reqs);
     }
 
