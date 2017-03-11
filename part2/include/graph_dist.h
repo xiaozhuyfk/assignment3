@@ -392,6 +392,7 @@ void DistGraph::setup() {
         if (rank != world_rank) vertex_queue[rank].insert(e.dest % vertices_per_process);
     }
 
+    /*
     send_size = std::vector<int>(world_size, 0);
     send_mapping = std::vector<std::vector<int>>(world_size,
             std::vector<int>(vertices_per_process, -1));
@@ -420,6 +421,7 @@ void DistGraph::setup() {
     }
 
     printf("Done with setup.\n");
+    */
 
 }
 
