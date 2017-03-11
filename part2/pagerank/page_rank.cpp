@@ -20,10 +20,10 @@ struct edge_package {
 };
 
 /*
- * pageRank-- 
+ * pageRank--
  *
  * Computes page rank on a distributed graph g
- * 
+ *
  * Per-vertex scores for all vertices *owned by this node* (not all
  * vertices in the graph) should be placed in `solution` upon
  * completion.
@@ -39,7 +39,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
     // Each node in the cluster is only aware of the outgoing edge
     // topology for the vertices it "owns".  The cluster nodes will
     // need to coordinate to determine what information.
- 
+
     // note: we give you starter code below to initialize scores for
     // ALL VERTICES in the graph, but feel free to modify as desired.
     // Keep in mind the `solution` array returned to the caller should
@@ -76,14 +76,14 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
         MPI_Request* disjoint_send_reqs = new MPI_Request[g.world_size];
 
-        // Phase 1 : update disjoint weight 
+        // Phase 1 : update disjoint weight
         // Calculate local disjoint weight
         double disjoint_weight = 0.;
-        #pragma omp parallel for reduction(+:disjoint_weight) 
+        #pragma omp parallel for reduction(+:disjoint_weight)
         for (std::size_t j = 0; j < disjoint.size(); j++) {
             disjoint_weight += damping * old[disjoint[j]] / totalVertices;
         }
-        //pass local disjoint 
+        //pass local disjoint
         double* disjoint_send_buf = new double[1];
         double* disjoint_recv_buf = new double[1];
 
@@ -109,7 +109,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         delete(disjoint_send_buf);
         delete(disjoint_recv_buf);
         delete(disjoint_send_reqs);
-        
+
         // Phase 2 : send scores across machine
         std::vector<double*> recv_bufs;
         MPI_Request* send_reqs = new MPI_Request[g.world_size];
@@ -135,14 +135,15 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
             }
         }
 
-        // initialize buffer size 
+        // initialize buffer size
         // some tips for casting vector to array
+        #pragma omp parallel for
         for (int i = 0; i < g.world_size; i++) {
             if (i != g.world_rank) {
                 double* send_buf = &buf_map[i][0];
-                MPI_Isend(send_buf, 
-                    static_cast<int> (buf_map[i].size()), 
-                    MPI_DOUBLE, 
+                MPI_Isend(send_buf,
+                    static_cast<int> (buf_map[i].size()),
+                    MPI_DOUBLE,
                     i, 0, MPI_COMM_WORLD, &send_reqs[i]);
             }
         }
@@ -155,7 +156,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
                 recv_bufs.push_back(recv_buf);
 
                 MPI_Recv(recv_buf, g.world_incoming_size[i] * 2, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
-                
+
                 for(int j = 0; j < g.world_incoming_size[i]; j++) {
                     double value = recv_buf[2 * j + 1];
                     int recv_vertex = (int) recv_buf[2 * j];
@@ -171,6 +172,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         }
 
         //clear buf
+        #pragma omp parallel for
         for (size_t i = 0; i < recv_bufs.size(); i++) {
             delete(recv_bufs[i]);
         }
@@ -188,7 +190,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         for (int i = 0; i < vertices_per_process; i++) {
             diff += std::abs(solution[i] - old[i]);
         }
-        
+
         // Pass local converge score
         double* converge_send_buf = new double[1];
         double* converge_recv_buf = new double[1];
@@ -209,7 +211,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
             converge_send_buf[0] = diff;
             for (int i = 1; i < g.world_size; i++) { //exclude self
                 MPI_Isend(converge_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &converge_send_reqs[i]);
-            }            
+            }
         }
         converged = (diff < convergence);
 
@@ -243,8 +245,8 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         converged = (global_diff < convergence)
 
         // Note that here, some communication between all the nodes is necessary
-        // so that all nodes have the same copy of old scores before beginning the 
-        // next iteration. You should be careful to make sure that any data you send 
+        // so that all nodes have the same copy of old scores before beginning the
+        // next iteration. You should be careful to make sure that any data you send
         // is received before you delete or modify the buffers you are sending.
 
     }
