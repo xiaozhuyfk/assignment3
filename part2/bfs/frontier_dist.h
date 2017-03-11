@@ -98,67 +98,46 @@ inline
 bool DistFrontier::is_empty() {
     // 15-418/618 STUDENT TODO: Implement this function. Should return
     // true if the cluster-wide frontier is zero
-
     int frontier_check = 0;
-    for (auto& s : sizes) {
-        if (s) {
+    for (int i = 0; i < world_size; i++) {
+        //std::cout << i << std::endl;
+        if (sizes[i]) {
+            //std::cout << i << " " << sizes[i] << std::endl;
             frontier_check = 1;
             break;
         }
     }
-
+    int counter = 0;
+    int* send_buf = new int[1];
+    int* recv_buf = new int[1];
+    MPI_Request* send_reqs = new MPI_Request[world_size];
     if (world_rank) {
-        std::std::<Vertex*> v;
-        std::vector<Vertex*> recv_buf;
-
-        MPI_Request* send_reqs = new MPI_Request[1];
-
-        if (g.world_rank) {
-            send_buf[0] = frontier_check;
-            MPI_Isend(send_buf, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &send_reqs[0]);
+        send_buf[0] = frontier_check;
+        MPI_Isend(send_buf, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &send_reqs[0]);
+        MPI_Status status;
+        MPI_Recv(recv_buf, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+        counter = recv_buf[0];
+    } else {
+        for (int i = 1; i < world_size; i++) {
             MPI_Status status;
-            MPI_Recv(recv_buf, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-        } else {
-            for (int i = 0; i < g.world_size; i++) {
-                if (i != g.world_rank) {
-                    MPI
-                }
-            }
-
+            // reuse recv_buf, cannot parallel
+            MPI_Recv(recv_buf, 1, MPI_INT, i, 0, MPI_COMM_WORLD, &status);
+            counter += recv_buf[0];
         }
-
-
- +            for (int i = 0; i < g.world_size; i++) {
- +                if (i!=g.world_rank) {
- +                    MPI_Status status;
- +                    MPI_Recv(disjoint_recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
- +                    disjoint_weight += disjoint_recv_buf[0];
- +                }
-              })
-
-        for (int i = 0; i < g.world_size; i++) {
-            if (i != g.world_rank) {
-                disjoint_send_bufs.push_back(disjoint_send_buf);
-                disjoint_send_idx.push_back(i);
-                disjoint_send_buf[0] = disjoint_weight;
-                MPI_Isend(disjoint_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &disjoint_send_reqs[i]);
-            }
-
+        counter += frontier_check; // Add self frontier_check result for master node
+        //std::cout << counter << std::endl;
+        send_buf[0] = counter;
+        for (int i = 1; i < world_size; i++) {
+            MPI_Isend(send_buf,1,MPI_INT, i , 0, MPI_COMM_WORLD, &send_reqs[i]);
         }
-        //receive and update local disjoint
-
-        for (int i = 0; i < g.world_size; i++) {
-            if (i!=g.world_rank) {
-                MPI_Status status;
-                double* recv_buf = new double[1];
-                disjoint_recv_bufs.push_back(recv_buf);
-
-                MPI_Recv(recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
-                disjoint_weight += recv_buf[0];
-            }
+        for (int i = 1; i < world_size; i++) {
+            MPI_Status status;
+            MPI_Wait(&send_reqs[i], &status);
         }
-
-
-    return true;
+    }
+    delete(recv_buf);
+    delete(send_buf);
+    delete(send_reqs);
+    return (!counter);
 }
 
