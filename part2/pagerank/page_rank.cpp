@@ -311,10 +311,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         double diff = compute_global_diff(g, solution, old);
         converged = (diff < convergence);
 
-        //clear converge buf
-        delete(converge_send_buf);
-        delete(converge_recv_buf);
-        delete(converge_send_reqs);
     }
 
     free(old);
