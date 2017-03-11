@@ -424,7 +424,7 @@ void DistGraph::setup() {
             std::vector<int>(vertices_per_process, -1));
     for (auto &e : in_edges) {
         int rank = get_vertex_owner_rank(e.src);
-        int index = send_mapping[world_rank][e.dest - rank * vertices_per_process];
+        int index = send_mapping[world_rank][e.dest % vertices_per_process];
         if (recv_mapping[rank][index] < 0) {
             recv_mapping[rank][index] = e.dest;
             recv_size[rank]++;

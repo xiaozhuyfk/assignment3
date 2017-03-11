@@ -126,7 +126,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         std::vector<double *> recv_bufs;
         MPI_Request* send_reqs = new MPI_Request[g.world_size];
 
-        std::vector<std::vector<double>> buffer_array = std::vector<std::vector<double>>(g.world_size); // buffer to send to other worlds
+        std::vector<std::vector<double>> buffer_array = std::vector<std::vector<double>>(g.world_size);
         std::map<Vertex, double> score_map;
         for (int rank = 0; rank < g.world_size; rank++) {
             buffer_array[rank] = std::vector<double>(g.send_size[rank], 0.0);
