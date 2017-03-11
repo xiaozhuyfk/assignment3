@@ -99,34 +99,42 @@ bool DistFrontier::is_empty() {
     // 15-418/618 STUDENT TODO: Implement this function. Should return
     // true if the cluster-wide frontier is zero
 
-    /*
-     * TODO: case on world rank
-     *      if (world rank > 0) {
-     *          send frontier size to master node
-     *
-     *          receive broadcast from master node
-     *      } else {
-     *          receive frontier size from worker nodes
-     *
-     *          broadcast frontier size to worker nodes
-     *      }
-     *
-     *      return (count == 0);
-     */
+    int frontier_check = 0;
+    for (auto& s : sizes) {
+        if (s) {
+            frontier_check = 1;
+            break;
+        }
+    }
+
     if (world_rank) {
-        std::vector<Vertex**> send_bufs;
-        std::vector<int> send_idx;
+        std::std::<Vertex*> v;
         std::vector<Vertex*> recv_buf;
 
-        MPI_Request* send_reqs = new MPI_Request[2];
+        MPI_Request* send_reqs = new MPI_Request[1];
 
-        //pass local disjoint
-        Vertex* disjoint_send_buf = elements;
+        if (g.world_rank) {
+            send_buf[0] = frontier_check;
+            MPI_Isend(send_buf, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &send_reqs[0]);
+            MPI_Status status;
+            MPI_Recv(recv_buf, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+        } else {
+            for (int i = 0; i < g.world_size; i++) {
+                if (i != g.world_rank) {
+                    MPI
+                }
+            }
 
-        int size_sum = 0;
-        for (auto& s : sizes) {
-            size_sum += s;
         }
+
+
+ +            for (int i = 0; i < g.world_size; i++) {
+ +                if (i!=g.world_rank) {
+ +                    MPI_Status status;
+ +                    MPI_Recv(disjoint_recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
+ +                    disjoint_weight += disjoint_recv_buf[0];
+ +                }
+              })
 
         for (int i = 0; i < g.world_size; i++) {
             if (i != g.world_rank) {
