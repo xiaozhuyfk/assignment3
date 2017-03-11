@@ -10,6 +10,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <set>
 
 #include "graph_dist_ref.h"
 
@@ -413,7 +414,9 @@ void DistGraph::setup() {
             std::vector<int>(vertices_per_process, -1));
     for (auto &e : out_edges) {
         int rank = get_vertex_owner_rank(e.dest);
-        send_mapping[rank][e.src-offset] = send_size[rank]++;
+        if (send_mapping[rank][e.src-offset] < 0) {
+            send_mapping[rank][e.src-offset] = send_size[rank]++;
+        }
     }
 
     recv_size = std::vector<int>(world_size, 0);
@@ -421,9 +424,11 @@ void DistGraph::setup() {
             std::vector<int>(vertices_per_process, -1));
     for (auto &e : in_edges) {
         int rank = get_vertex_owner_rank(e.src);
-        recv_size[rank]++;
         int index = send_mapping[world_rank][e.dest - rank * vertices_per_process];
-        recv_mapping[rank][index] = e.dest;
+        if (recv_mapping[rank][index] < 0) {
+            recv_mapping[rank][index] = e.dest;
+            recv_size[rank]++;
+        }
     }
 }
 
