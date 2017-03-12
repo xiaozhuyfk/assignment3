@@ -434,7 +434,7 @@ void DistGraph::setup() {
         recv_mapping[mid] = in_queue;
     }
 
-    printf("%d\n", disjoint.size());
+    printf("%d\n", (int) disjoint.size());
 }
 
 #endif
