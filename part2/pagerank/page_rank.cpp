@@ -50,7 +50,7 @@ double compute_disjoint_weight(
         if (i!=g.world_rank) {
             MPI_Status status;
             double recv_value;
-            disjoint_recv_bufs.push_back(recv_buf);
+            disjoint_recv_bufs.push_back(&recv_value);
 
             MPI_Recv(&recv_value, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
             disjoint_weight += recv_value;
@@ -71,7 +71,6 @@ double compute_disjoint_weight(
 
 double compute_global_diff(DistGraph &g, double *solution, double *old) {
 
-    /*
     std::vector<double*> converge_send_bufs;
     std::vector<int> converge_send_idx;
     std::vector<double*> converge_recv_bufs;
@@ -86,12 +85,10 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
     }
 
     // Pass local converge score
-    double* converge_send_buf = new double[1];
+    double* converge_send_buf = &diff;
     for (int i = 0; i < g.world_size; i++) {
         if (i != g.world_rank) {
             converge_send_bufs.push_back(converge_send_buf);
-            converge_send_idx.push_back(i);
-            converge_send_buf[0] = diff;
             MPI_Isend(converge_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &converge_send_reqs[i]);
         }
 
@@ -100,11 +97,11 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
     for (int i = 0; i < g.world_size; i++) {
         if (i!=g.world_rank) {
             MPI_Status status;
-            double* recv_buf = new double[1];
-            converge_recv_bufs.push_back(recv_buf);
+            double recv_value;
+            converge_recv_bufs.push_back(&recv_value);
 
-            MPI_Recv(recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
-            diff += recv_buf[0];
+            MPI_Recv(&recv_value, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
+            diff += recv_value;
         }
     }
 
@@ -117,37 +114,6 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
 
     delete(converge_send_reqs);
     return diff;
-    */
-
-    // Calculate local convergence
-    double diff = 0.;
-    #pragma omp parallel for reduction(+:diff)
-    for (int i = 0; i < g.vertices_per_process; i++) {
-        diff += std::abs(solution[i] - old[i]);
-    }
-    // gather the local difference to root node
-    double *rbuf;
-    if (g.world_rank == 0) {
-       rbuf = new double[g.world_size * sizeof(double)];
-    }
-    MPI_Gather(&diff, 1, MPI_DOUBLE, rbuf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-    // compute the global diff (sum local diffs) on root node
-    double global_diff;
-    if (g.world_rank == 0) {
-        rbuf[0] = diff;
-        #pragma omp parallel for reduction(+:global_diff)
-        for (int mid = 0; mid < g.world_size; mid++) {
-            global_diff += rbuf[mid];
-        }
-    }
-
-    // broadcast global diff to all nodes
-    MPI_Bcast(&global_diff, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    if (g.world_rank == 0) {
-        delete(rbuf);
-    }
-    return global_diff;
 }
 
 
