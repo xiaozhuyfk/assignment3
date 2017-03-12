@@ -130,6 +130,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
             }
         }
 
+        #pragma omp parallel for
         for (size_t i = 0; i < g.outgoing_edge_gather.size(); i++) {
             for (auto& local_v: g.outgoing_edge_gather[i]) {
                 vtx_score[i] += local_outedge_score[local_v];
