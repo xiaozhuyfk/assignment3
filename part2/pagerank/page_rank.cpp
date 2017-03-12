@@ -12,11 +12,12 @@
 
 #include "../include/graph_dist.h"
 
-/*
 double compute_disjoint_weight(
         DistGraph &g,
         double damping,
         double *old) {
+
+    int total_vertices = g.total_vertices();
     std::vector<double*> disjoint_send_bufs;
     std::vector<int> disjoint_send_idx;
     std::vector<double*> disjoint_recv_bufs;
@@ -27,8 +28,8 @@ double compute_disjoint_weight(
     // Calculate local disjoint weight
     double disjoint_weight = 0.;
     #pragma omp parallel for reduction(+:disjoint_weight)
-    for (std::size_t j = 0; j < disjoint.size(); j++) {
-        disjoint_weight += damping * old[disjoint[j]] / totalVertices;
+    for (std::size_t j = 0; j < g.disjoint.size(); j++) {
+        disjoint_weight += damping * old[g.disjoint[j]] / total_vertices;
     }
     //pass local disjoint
     double* disjoint_send_buf = new double[1];
@@ -63,8 +64,10 @@ double compute_disjoint_weight(
     }
 
     delete(disjoint_send_reqs);
+
+    return disjoint_weight;
 }
-*/
+
 
 /*
  * pageRank--
@@ -108,52 +111,8 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
     bool converged = false;
     while (!converged) {
         std::memcpy(old, solution, sizeof(double) * vertices_per_process);
-        std::vector<double*> disjoint_send_bufs;
-        std::vector<int> disjoint_send_idx;
-        std::vector<double*> disjoint_recv_bufs;
 
-        MPI_Request* disjoint_send_reqs = new MPI_Request[g.world_size];
-
-        // Phase 1 : update disjoint weight
-        // Calculate local disjoint weight
-        double disjoint_weight = 0.;
-        #pragma omp parallel for reduction(+:disjoint_weight)
-        for (std::size_t j = 0; j < g.disjoint.size(); j++) {
-            disjoint_weight += damping * old[g.disjoint[j]] / totalVertices;
-        }
-        //pass local disjoint
-        double* disjoint_send_buf = new double[1];
-
-        for (int i = 0; i < g.world_size; i++) {
-            if (i != g.world_rank) {
-                disjoint_send_bufs.push_back(disjoint_send_buf);
-                disjoint_send_idx.push_back(i);
-                disjoint_send_buf[0] = disjoint_weight;
-                MPI_Isend(disjoint_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &disjoint_send_reqs[i]);
-            }
-
-        }
-        //receive and update local disjoint
-
-        for (int i = 0; i < g.world_size; i++) {
-            if (i!=g.world_rank) {
-                MPI_Status status;
-                double* recv_buf = new double[1];
-                disjoint_recv_bufs.push_back(recv_buf);
-
-                MPI_Recv(recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
-                disjoint_weight += recv_buf[0];
-            }
-        }
-
-        // clear disjoint buf
-        delete(disjoint_send_buf);
-
-        for (size_t i = 0; i < disjoint_recv_bufs.size(); i++) {
-            delete(disjoint_recv_bufs[i]);
-        }
-
-        delete(disjoint_send_reqs);
+        double disjoint_weight = compute_disjoint_weight(g, damping, old);
 
         // Phase 2 : send scores across machine
 
