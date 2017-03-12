@@ -400,7 +400,7 @@ void DistGraph::setup() {
 
 
     // initialize send/recv mapping heuristic
-    std::vector<std::set<Vertex>> vertex_queue = std::vector<std::set<Vertex>>(world_size, std::set<Vertex>());
+    std::vector<std::set<Vertex>> vertex_queue = std::vector<std::set<Vertex>>(world_size);
     for (auto &e : out_edges) {
         int rank = get_vertex_owner_rank(e.dest);
         if (rank != world_rank) vertex_queue[rank].insert(e.dest % vertices_per_process);
@@ -416,9 +416,9 @@ void DistGraph::setup() {
         for (unsigned int i = 0; i < out_queue.size(); i++) {
             send_mapping[mid][out_queue[i]] = i;
         }
+        vertex_queue[mid].clear();
     }
 
-    vertex_queue = std::vector<std::set<Vertex>>(world_size, std::set<Vertex>());
     for (auto &e : in_edges) {
         int rank = get_vertex_owner_rank(e.src);
         if (rank != world_rank) vertex_queue[rank].insert(e.dest % vertices_per_process);
