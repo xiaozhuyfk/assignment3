@@ -194,6 +194,13 @@ inline void compute_score(DistGraph &g, double *solution, double *old, double da
                 int dest = g.send_mapping[mid][idx];
                 buffer_array[mid][idx] = score_map[dest];
             }
+
+            double* send_buf = &buffer_array[mid][0];
+            send_bufs.push_back(send_buf);
+            MPI_Isend(send_buf,
+                static_cast<int> (buffer_array[mid].size()),
+                MPI_DOUBLE,
+                mid, 0, MPI_COMM_WORLD, &send_reqs[mid]);
         }
     }
 
@@ -220,6 +227,7 @@ inline void compute_score(DistGraph &g, double *solution, double *old, double da
 
     // initialize buffer size
     // some tips for casting vector to array
+    /*
     for (int i = 0; i < g.world_size; i++) {
         if (i != g.world_rank) {
             double* send_buf = &buffer_array[i][0];
@@ -230,6 +238,7 @@ inline void compute_score(DistGraph &g, double *solution, double *old, double da
                 i, 0, MPI_COMM_WORLD, &send_reqs[i]);
         }
     }
+    */
 
     // Receive and update value
     for (int i = 0; i < g.world_size; i++) {
