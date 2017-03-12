@@ -49,7 +49,7 @@ public:
 
     // local disjoint vertices array
     std::vector<int> disjoint;
-    double disjoing_weight;
+    double disjoint_weight;
     double global_diff;
 
     DistGraph(int _vertices_per_process, int _max_edges_per_vertex,
