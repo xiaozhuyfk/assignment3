@@ -38,6 +38,14 @@ public:
     std::vector<std::vector<Vertex>> outgoing_edges;
     std::map<int, int> world_incoming_size;
     std::map<int, int> world_outgoing_size;
+
+    // data structure for score retrieval
+    std::vector<int> send_size;
+    std::vector<int> recv_size;
+    std::vector<std::vector<int>> send_mapping;
+    std::vector<std::vector<int>> recv_mapping;
+
+    // local disjoint vertices array
     std::vector<int> disjoint;
 
     DistGraph(int _vertices_per_process, int _max_edges_per_vertex,
@@ -370,23 +378,55 @@ void DistGraph::setup() {
     for (auto &e: in_edges){
         int rank = get_vertex_owner_rank(e.src);
         world_incoming_size[rank]++;
-        incoming_edges[e.dest-offset].push_back(e.src); //local to global index
-        //std::cout << world_rank << " " << e.dest << e.src << std::endl;
+        incoming_edges[e.dest-offset].push_back(e.src);
     }
-    //std::cout << "come on" << std::endl;
+
     for (auto &e: out_edges){
         int rank = get_vertex_owner_rank(e.dest);
         world_outgoing_size[rank]++;
-        outgoing_edges[e.src-offset].push_back(e.dest);//local to global index
-        //std::cout << world_rank << " " << e.dest << e.src << std::endl;
+        outgoing_edges[e.src-offset].push_back(e.dest);
     }
-
 
     // initialize disjoint vertices
     for (int i = 0 ; i < vertices_per_process ; i++) {
         if (!outgoing_edges[i].size()) {
-            disjoint.push_back(i); //push global vertex index
+            disjoint.push_back(i);
         }
+    }
+
+
+    // initialize send/recv mapping heuristic
+    std::vector<std::set<Vertex>> vertex_queue = std::vector<std::set<Vertex>>(world_size, std::set<Vertex>());
+    for (auto &e : out_edges) {
+        int rank = get_vertex_owner_rank(e.dest);
+        if (rank != world_rank) vertex_queue[rank].insert(e.dest % vertices_per_process);
+    }
+
+    send_size = std::vector<int>(world_size, 0);
+    send_mapping = std::vector<std::vector<int>>(world_size,
+            std::vector<int>(vertices_per_process, -1));
+    for (int mid = 0; mid < world_size; mid++) {
+        send_size[mid] = vertex_queue[mid].size();
+        std::vector<Vertex> out_queue(vertex_queue[mid].begin(), vertex_queue[mid].end());
+        std::sort(out_queue.begin(), out_queue.end());
+        for (unsigned int i = 0; i < out_queue.size(); i++) {
+            send_mapping[mid][out_queue[i]] = i;
+        }
+    }
+
+    vertex_queue = std::vector<std::set<Vertex>>(world_size, std::set<Vertex>());
+    for (auto &e : in_edges) {
+        int rank = get_vertex_owner_rank(e.src);
+        if (rank != world_rank) vertex_queue[rank].insert(e.dest % vertices_per_process);
+    }
+
+    recv_size = std::vector<int>(world_size, 0);
+    recv_mapping = std::vector<std::vector<int>>(world_size);
+    for (int mid = 0; mid < world_size; mid++) {
+        recv_size[mid] = vertex_queue[mid].size();
+        std::vector<Vertex> in_queue(vertex_queue[mid].begin(), vertex_queue[mid].end());
+        std::sort(in_queue.begin(), in_queue.end());
+        recv_mapping[mid] = in_queue;
     }
 }
 
