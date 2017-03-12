@@ -100,6 +100,7 @@ double compute_disjoint_weight(
 
 double compute_global_diff(DistGraph &g, double *solution, double *old) {
 
+    /*
     std::vector<double*> converge_send_bufs;
     std::vector<int> converge_send_idx;
     std::vector<double*> converge_recv_bufs;
@@ -145,8 +146,8 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
 
     delete(converge_send_reqs);
     return diff;
+    */
 
-    /*
     // Calculate local convergence
     double diff = 0.;
     #pragma omp parallel for reduction(+:diff)
@@ -173,7 +174,6 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
         delete(rbuf);
     }
     return global_diff;
-    */
 }
 
 
