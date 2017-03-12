@@ -45,8 +45,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
     // Keep in mind the `solution` array returned to the caller should
     // only have scores for the local vertices
 
-    //std::cout << "From world: " << g.world_rank << " Everything comees back to you" << std::endl;
-
     int totalVertices = g.total_vertices();
     double equal_prob = 1.0/totalVertices;
     int local_size = g.end_vertex-g.start_vertex+1;
@@ -80,7 +78,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
         // Phase 1 : update disjoint weight
         // Calculate local disjoint weight
-        //std::cout << "From world: " << g.world_rank << " phase 1" << std::endl;
         
         double disjoint_weight = 0.;
         #pragma omp parallel for reduction(+:disjoint_weight)
@@ -108,7 +105,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         }
         
         // Phase 2 : send scores across machine
-        //std::cout << "From world: " << g.world_rank << " phase 2" << std::endl;
 
         std::vector<double*> send_bufs;
         std::vector<double*> recv_bufs;
@@ -156,7 +152,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
                 MPI_Isend(send_buf, send_buf_size, MPI_DOUBLE, r, 0, MPI_COMM_WORLD, &send_reqs[r]);
             } else if (r == g.world_rank) {
                 // We should internalize this buf
-                //assert(g.rank_outedge_lookup[r].size() == g.rank_inedge_lookup[r].size());
 
                 for (int i = 0; i < send_buf_size; i++) {
                     local_score[g.rank_inedge_lookup[r][i]] += send_buf[i];
@@ -181,7 +176,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         }
 
         // Update the final value to solution to prepare for next iteration
-        //#pragma omp parallel for
         for (int i = 0; i < local_size ; i++) {
             solution[i] = (damping * local_score[i]) + (1.0 - damping) /  totalVertices + disjoint_weight;
         }
@@ -202,8 +196,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         }
 
         // Phase 3 : Check for convergence
-        //std::cout << "From world: " << g.world_rank << " phase 3" << std::endl;
-
 
         // Calculate local convergence
         double diff = 0.;
@@ -249,5 +241,4 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
     delete(send_reqs);
 
     free(old);
-    //std::cout << "Is this real?" << std::endl;
 }
