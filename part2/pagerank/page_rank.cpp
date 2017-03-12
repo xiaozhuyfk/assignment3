@@ -106,13 +106,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
                 MPI_Isend(disjoint_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &disjoint_send_reqs[i]);
             }
         }
-
-        //Make sure all the sends are received
-        MPI_Barrier(MPI_COMM_WORLD);
-
-        if (disjoint_weight) {
-            std::cout << g.world_rank << " has disjoint weight " << disjoint_weight << std::endl;
-        }
         
         // Phase 2 : send scores across machine
         //std::cout << "From world: " << g.world_rank << " phase 2" << std::endl;
@@ -187,7 +180,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         }
 
         // Update the final value to solution to prepare for next iteration
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (int i = 0; i < local_size ; i++) {
             solution[i] = (damping * local_score[i]) + (1.0 - damping) /  totalVertices + disjoint_weight;
         }
