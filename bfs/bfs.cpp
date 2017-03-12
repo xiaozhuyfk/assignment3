@@ -33,7 +33,7 @@ void top_down_step(
         vertex_set* new_frontier,
         int* distances) {
 
-    int threads = (g->num_nodes == 1000 * 1000) ? 16 : 32;
+    int threads = (g->num_nodes <= 1000 * 1000) ? 16 : 32;
 
     #pragma omp parallel num_threads(threads)
     {
