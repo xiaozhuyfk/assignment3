@@ -38,6 +38,7 @@ public:
     std::vector<std::vector<Vertex>> outgoing_edges;
     std::map<int, int> world_incoming_size;
     std::map<int, int> world_outgoing_size;
+    std::vector<int> disjoint;
 
     DistGraph(int _vertices_per_process, int _max_edges_per_vertex,
               GraphType _type, int _world_size, int _world_rank);
@@ -378,6 +379,14 @@ void DistGraph::setup() {
         world_outgoing_size[rank]++;
         outgoing_edges[e.src-offset].push_back(e.dest);//local to global index
         //std::cout << world_rank << " " << e.dest << e.src << std::endl;
+    }
+
+
+    // initialize disjoint vertices
+    for (int i = 0 ; i < vertices_per_process ; i++) {
+        if (!outgoing_edges[i].size()) {
+            disjoint.push_back(i); //push global vertex index
+        }
     }
 }
 
