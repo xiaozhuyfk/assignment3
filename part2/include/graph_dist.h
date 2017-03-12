@@ -422,7 +422,7 @@ void DistGraph::setup() {
 
     for (auto &e : in_edges) {
         int rank = get_vertex_owner_rank(e.src);
-        if (rank != world_rank) vertex_queue[rank].insert(e.dest % vertices_per_process);
+        if (rank != world_rank) vertex_queue[rank].insert(e.dest);
     }
 
     recv_size = std::vector<int>(world_size, 0);

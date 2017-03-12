@@ -251,7 +251,7 @@ inline void compute_score(DistGraph &g, double *solution, double *old, double da
     // Update the final value to solution to prepare for next iteration
     #pragma omp parallel for
     for (int i = 0; i < vertices_per_process ; i++) {
-        solution[i] = (damping * score_map[i]) + (1.0 - damping) /  total_vertices + g.disjoint_weight;
+        solution[i] = (damping * score_map[i + g.world_rank * g.vertices_per_process]) + (1.0 - damping) /  total_vertices + g.disjoint_weight;
     }
 
     //clear buf
