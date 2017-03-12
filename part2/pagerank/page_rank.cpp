@@ -17,6 +17,7 @@ double compute_disjoint_weight(
         double damping,
         double *old) {
 
+    /*
     int total_vertices = g.total_vertices();
     std::vector<double*> disjoint_send_bufs;
     std::vector<int> disjoint_send_idx;
@@ -66,6 +67,35 @@ double compute_disjoint_weight(
     delete(disjoint_send_reqs);
 
     return disjoint_weight;
+    */
+
+    int totalVertices = g.total_vertices();
+    // Calculate local disjoint weight
+    double disjoint_weight = 0.;
+    #pragma omp parallel for reduction(+:disjoint_weight)
+    for (std::size_t j = 0; j < g.disjoint.size(); j++) {
+        disjoint_weight += damping * old[g.disjoint[j]] / totalVertices;
+    }
+    // gather local disjoint weight to root node
+    double *rbuf;
+    if (g.world_rank == 0) {
+       rbuf = new double[g.world_size * sizeof(double)];
+    }
+    MPI_Gather(&disjoint_weight, 1, MPI_DOUBLE, rbuf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    // sum the distributed disjoint weight
+    double total_weight;
+    if (g.world_rank == 0) {
+        #pragma omp parallel for reduction(+:total_weight)
+        for (int mid = 0; mid < g.world_size; mid++) {
+            total_weight += rbuf[mid];
+        }
+    }
+    // broadcast total disjoint weight to all nodes
+    MPI_Bcast(&total_weight, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    if (g.world_rank == 0) {
+        delete(rbuf);
+    }
+    return total_weight;
 }
 
 
