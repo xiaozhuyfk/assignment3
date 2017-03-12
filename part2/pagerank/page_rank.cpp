@@ -98,7 +98,7 @@ void compute_score(DistGraph &g, double *solution, double *old, double damping) 
     MPI_Request* send_reqs = new MPI_Request[g.world_size];
 
     std::vector<std::vector<double>> buffer_array = std::vector<std::vector<double>>(g.world_size);
-    std::map<Vertex, double> score_map;
+    std::vector<double> score_map = std::vector<double>(g.vertices_per_process);
     for (int rank = 0; rank < g.world_size; rank++) {
         buffer_array[rank] = std::vector<double>(g.send_size[rank], 0.0);
     }
@@ -146,7 +146,7 @@ void compute_score(DistGraph &g, double *solution, double *old, double damping) 
             for(int j = 0; j < g.recv_size[i]; j++) {
                 double value = recv_buf[j];
                 int recv_vertex = g.recv_mapping[i][j];
-                score_map[recv_vertex - offset] += value;
+                score_map[recv_vertex] += value;
             }
         }
     }
