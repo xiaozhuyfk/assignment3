@@ -15,14 +15,14 @@
 
 using Vertex = int;
 
-/* 
+/*
  * Representation of a distributed graph.  Each node in the cluster is
  * the "owner" of a subset of the vertices in the graph
- */ 
+ */
 class DistGraph {
 public:
     int vertices_per_process;   // vertices per cluster node
-    int max_edges_per_vertex;  
+    int max_edges_per_vertex;
 
     int world_size;
     int world_rank;
@@ -99,7 +99,7 @@ DistGraph::DistGraph(int _vertices_per_process, int _max_edges_per_vertex,
 
 /*
  * get_vertex_owner_rank --
- * 
+ *
  * Returns the id of the node that is the owner of the vertex
  */
 inline
@@ -109,7 +109,7 @@ int DistGraph::get_vertex_owner_rank(Vertex v) {
 
 /*
  * total_vertices --
- * 
+ *
  * Returns to total number of vertices in the graph
  */
 inline
@@ -119,7 +119,7 @@ int DistGraph::total_vertices() {
 
 /*
  * get_incoming_edges --
- * 
+ *
  * uses inter-node communication to build a list of in_edges from the
  * distributed list of out_edges
  */
@@ -359,36 +359,13 @@ void DistGraph::generate_graph_clustered() {
 }
 
 /*
- * setup -- 
+ * setup --
  */
 inline
 void DistGraph::setup() {
     incoming_edges = std::vector<std::vector<Vertex>>(vertices_per_process);
     outgoing_edges = std::vector<std::vector<Vertex>>(vertices_per_process);
-    //world_incoming_edges = std::vector<std::vector<Vertex>>(world_size);
-    //world_outgoing_edges = std::vector<std::vector<Vertex>>(world_size);
     int offset = world_rank * vertices_per_process;
-    /*
-    for (auto &e: in_edges){
-        incoming_edges[e.dest].insert(e.src); //map local destination to global source
-        int rank = get_vertex_owner_rank(e.src);
-        in_map_set[rank].insert(e.src);
-    }
-    for (int i = 0; i < world_size;i++) {
-        std::vector<Vertex> v(in_map_set[i].begin(),in_map_set[i].end());
-        std::sort(v.begin(),v.end());
-        incoming_world_map[i] = v;
-    }
-    for (auto &e: out_edges){
-        outgoing_edges[e.src].insert(e.dest); //map local source to global destination
-        int rank = get_vertex_owner_rank(e.dest);
-        out_map_set[rank].insert(e.dest);
-    }
-    for (int i = 0; i < world_size;i++) {
-        std::vector<Vertex> v(out_map_set[i].begin(),out_map_set[i].end());
-        std::sort(v.begin(),v.end());
-        outgoing_world_map[i] = v;
-    }*/
     for (auto &e: in_edges){
         int rank = get_vertex_owner_rank(e.src);
         world_incoming_size[rank]++;
