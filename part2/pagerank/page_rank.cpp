@@ -17,6 +17,7 @@ double compute_disjoint_weight(
         double damping,
         double *old) {
 
+    /*
     int total_vertices = g.total_vertices();
     std::vector<double*> disjoint_send_bufs;
     std::vector<int> disjoint_send_idx;
@@ -31,9 +32,8 @@ double compute_disjoint_weight(
     for (std::size_t j = 0; j < g.disjoint.size(); j++) {
         disjoint_weight += damping * old[g.disjoint[j]] / total_vertices;
     }
-
     //pass local disjoint
-    double* disjoint_send_buf = &disjoint_weight;
+    double* disjoint_send_buf = new double[1];
 
     for (int i = 0; i < g.world_size; i++) {
         if (i != g.world_rank) {
@@ -49,11 +49,11 @@ double compute_disjoint_weight(
     for (int i = 0; i < g.world_size; i++) {
         if (i!=g.world_rank) {
             MPI_Status status;
-            double recv_value;
-            disjoint_recv_bufs.push_back(&recv_value);
+            double* recv_buf = new double[1];
+            disjoint_recv_bufs.push_back(recv_buf);
 
-            MPI_Recv(&recv_value, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
-            disjoint_weight += recv_value;
+            MPI_Recv(recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
+            disjoint_weight += recv_buf[0];
         }
     }
 
@@ -67,6 +67,35 @@ double compute_disjoint_weight(
     delete(disjoint_send_reqs);
 
     return disjoint_weight;
+    */
+
+    int totalVertices = g.total_vertices();
+    // Calculate local disjoint weight
+    double disjoint_weight = 0.;
+    #pragma omp parallel for reduction(+:disjoint_weight)
+    for (std::size_t j = 0; j < g.disjoint.size(); j++) {
+        disjoint_weight += damping * old[g.disjoint[j]] / totalVertices;
+    }
+    // gather local disjoint weight to root node
+    double *rbuf;
+    if (g.world_rank == 0) {
+       rbuf = new double[g.world_size * sizeof(double)];
+    }
+    MPI_Gather(&disjoint_weight, 1, MPI_DOUBLE, rbuf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    // sum the distributed disjoint weight
+    double total_weight;
+    if (g.world_rank == 0) {
+        #pragma omp parallel for reduction(+:total_weight)
+        for (int mid = 0; mid < g.world_size; mid++) {
+            total_weight += rbuf[mid];
+        }
+    }
+    // broadcast total disjoint weight to all nodes
+    MPI_Bcast(&total_weight, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    if (g.world_rank == 0) {
+        delete(rbuf);
+    }
+    return total_weight;
 }
 
 double compute_global_diff(DistGraph &g, double *solution, double *old) {
@@ -85,10 +114,12 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
     }
 
     // Pass local converge score
-    double* converge_send_buf = &diff;
+    double* converge_send_buf = new double[1];
     for (int i = 0; i < g.world_size; i++) {
         if (i != g.world_rank) {
             converge_send_bufs.push_back(converge_send_buf);
+            converge_send_idx.push_back(i);
+            converge_send_buf[0] = diff;
             MPI_Isend(converge_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &converge_send_reqs[i]);
         }
 
@@ -97,11 +128,11 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
     for (int i = 0; i < g.world_size; i++) {
         if (i!=g.world_rank) {
             MPI_Status status;
-            double recv_value;
-            converge_recv_bufs.push_back(&recv_value);
+            double* recv_buf = new double[1];
+            converge_recv_bufs.push_back(recv_buf);
 
-            MPI_Recv(&recv_value, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
-            diff += recv_value;
+            MPI_Recv(recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
+            diff += recv_buf[0];
         }
     }
 
