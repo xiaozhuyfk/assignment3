@@ -160,15 +160,16 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
        rbuf = new double[g.world_size * sizeof(double)];
     }
     MPI_Gather(&diff, 1, MPI_DOUBLE, rbuf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
     // compute the global diff (sum local diffs) on root node
     double global_diff;
     if (g.world_rank == 0) {
+        rbuf[0] = diff;
         #pragma omp parallel for reduction(+:global_diff)
         for (int mid = 0; mid < g.world_size; mid++) {
             global_diff += rbuf[mid];
         }
     }
-    MPI_Barrier(MPI_COMM_WORLD);
 
     // broadcast global diff to all nodes
     MPI_Bcast(&global_diff, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
