@@ -40,6 +40,7 @@ public:
     std::vector<std::vector<Vertex>> outgoing_edge_gather;
     std::vector<std::vector<int>> rank_outedge_lookup;
     std::vector<std::vector<Vertex>> rank_inedge_lookup;
+    std::vector<int> disjoint;
 
     DistGraph(int _vertices_per_process, int _max_edges_per_vertex,
               GraphType _type, int _world_size, int _world_rank);
@@ -406,6 +407,13 @@ void DistGraph::setup() {
             int rank = get_vertex_owner_rank(i);
             rank_outedge_lookup[rank].push_back(index++); //regards which index in outgoing_edge_gather 
             assert(index == (int) outgoing_edge_gather.size());
+        }
+    }
+
+    //initialize local disjoint set
+    for (int i = 0 ; i < vertices_per_process ; i++) {
+        if (!outgoing_edges[i].size()) {
+            disjoint.push_back(i); //push global vertex index
         }
     }
 
