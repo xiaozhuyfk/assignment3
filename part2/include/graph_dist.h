@@ -10,6 +10,8 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <algorithm>
+#include <set>
 
 #include "graph_dist_ref.h"
 
