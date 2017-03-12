@@ -175,6 +175,7 @@ inline void compute_score(DistGraph &g, double *solution, double *old, double da
 
     std::vector<std::vector<double>> buffer_array = std::vector<std::vector<double>>(g.world_size);
     std::map<Vertex, double> score_map;// = std::vector<double>(g.vertices_per_process);
+    std::vector<double> update_score = std::vector<double>(g.vertices_per_process, 0);
 
     #pragma omp parallel for
     for (int rank = 0; rank < g.world_size; rank++) {
@@ -185,7 +186,8 @@ inline void compute_score(DistGraph &g, double *solution, double *old, double da
         int rank = g.get_vertex_owner_rank(e.dest);
         int src = e.src - g.world_rank * g.vertices_per_process;
         double value = old[src] / static_cast<int>(g.outgoing_edges[src].size());
-        score_map[e.dest] += value;
+        if (rank == g.world_rank) update_score[e.dest % g.vertices_per_process] += value;
+        else score_map[e.dest] += value;
     }
 
     for (int mid = 0; mid < g.world_size; mid++) {
@@ -252,7 +254,8 @@ inline void compute_score(DistGraph &g, double *solution, double *old, double da
             for(int j = 0; j < g.recv_size[i]; j++) {
                 double value = recv_buf[j];
                 int recv_vertex = g.recv_mapping[i][j];
-                score_map[recv_vertex] += value;
+                //score_map[recv_vertex] += value;
+                update_score[recv_vertex % g.vertices_per_process] += value;
             }
         }
     }
@@ -260,7 +263,7 @@ inline void compute_score(DistGraph &g, double *solution, double *old, double da
     // Update the final value to solution to prepare for next iteration
     #pragma omp parallel for
     for (int i = 0; i < vertices_per_process ; i++) {
-        solution[i] = (damping * score_map[i + g.world_rank * g.vertices_per_process]) + (1.0 - damping) /  total_vertices + g.disjoint_weight;
+        solution[i] = (damping * update_score[i]) + (1.0 - damping) /  total_vertices + g.disjoint_weight;
     }
 
     //clear buf
