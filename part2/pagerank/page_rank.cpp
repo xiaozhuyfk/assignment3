@@ -48,7 +48,7 @@ void compute_disjoint_weight(
         delete(rbuf);
     }
 
-    g.disjoing_weight = total_weight;
+    g.disjoint_weight = total_weight;
 }
 
 void compute_global_diff(DistGraph &g, double *solution, double *old) {
