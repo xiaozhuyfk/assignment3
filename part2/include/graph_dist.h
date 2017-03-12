@@ -403,7 +403,7 @@ void DistGraph::setup() {
     std::vector<std::set<Vertex>> vertex_queue = std::vector<std::set<Vertex>>(world_size);
     for (auto &e : out_edges) {
         int rank = get_vertex_owner_rank(e.dest);
-        if (rank != world_rank) vertex_queue[rank].insert(e.dest % vertices_per_process);
+        if (rank != world_rank) vertex_queue[rank].insert(e.dest);
     }
 
     send_size = std::vector<int>(world_size, 0);
@@ -413,10 +413,10 @@ void DistGraph::setup() {
         send_size[mid] = vertex_queue[mid].size();
         std::vector<Vertex> out_queue(vertex_queue[mid].begin(), vertex_queue[mid].end());
         std::sort(out_queue.begin(), out_queue.end());
-        for (unsigned int i = 0; i < out_queue.size(); i++) {
-            send_mapping[mid][out_queue[i]] = i;
-        }
-        //send_mapping[mid] = out_queue;
+        //for (unsigned int i = 0; i < out_queue.size(); i++) {
+        //    send_mapping[mid][out_queue[i]] = i;
+        //}
+        send_mapping[mid] = out_queue;
         vertex_queue[mid].clear();
     }
 

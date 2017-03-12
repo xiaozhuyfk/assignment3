@@ -174,14 +174,31 @@ inline void compute_score(DistGraph &g, double *solution, double *old, double da
     MPI_Request* send_reqs = new MPI_Request[g.world_size];
 
     std::vector<std::vector<double>> buffer_array = std::vector<std::vector<double>>(g.world_size);
-    std::vector<double> score_map = std::vector<double>(g.vertices_per_process);
+    std::map<Vertex, double> score_map;// = std::vector<double>(g.vertices_per_process);
 
     #pragma omp parallel for
     for (int rank = 0; rank < g.world_size; rank++) {
         buffer_array[rank] = std::vector<double>(g.send_size[rank], 0.0);
     }
 
+    for (auto &e : g.out_edges) {
+        int rank = g.get_vertex_owner_rank(e.dest);
+        int src = e.src - g.world_rank * g.vertices_per_process;
+        double value = old[src] / static_cast<int>(g.outgoing_edges[src].size());
+        score_map[e.dest] += value;
+    }
+
+    for (int mid = 0; mid < g.world_size; mid++) {
+        if (mid != g.world_rank) {
+            for (int idx = 0; idx < g.send_mapping[mid].size(); idx++) {
+                int dest = g.send_mapping[mid][idx];
+                buffer_array[mid][idx] = score_map[dest];
+            }
+        }
+    }
+
     //prepare buffer in vector form
+    /*
     for (int i = 0; i < vertices_per_process; i++) {
         double value = old[i] / static_cast<int>(g.outgoing_edges[i].size());
 
@@ -199,6 +216,7 @@ inline void compute_score(DistGraph &g, double *solution, double *old, double da
             }
         }
     }
+    */
 
     // initialize buffer size
     // some tips for casting vector to array
