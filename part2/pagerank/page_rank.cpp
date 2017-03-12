@@ -8,6 +8,7 @@
 #include <iostream>
 #include <cstdint>
 #include <cstring>
+#include <cassert>
 #include <vector>
 
 #include "../include/graph_dist.h"
@@ -190,6 +191,7 @@ inline void compute_score(DistGraph &g, double *solution, double *old, double da
                 //need to send to other world
                 int out_offset = rank * vertices_per_process;
                 int index = g.send_mapping[rank][out - out_offset];
+                assert(index != -1);
                 buffer_array[rank][index] += value;
             } else{
                 //update local score map on the destination vertex
