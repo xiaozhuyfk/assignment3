@@ -163,6 +163,87 @@ void compute_score_test(DistGraph &g, double *solution, double *old, double damp
     delete(send_reqs);
 }
 
+inline void compute_score_wrong(DistGraph &g, double *solution, double *old, double damping) {
+    int vertices_per_process = g.vertices_per_process;
+    int total_vertices = g.total_vertices();
+    int offset = g.vertices_per_process * g.world_rank;
+
+    std::vector<double *> send_bufs;
+    std::vector<double *> recv_bufs;
+    MPI_Request* send_reqs = new MPI_Request[g.world_size];
+
+    std::vector<std::vector<double>> buffer_array = std::vector<std::vector<double>>(g.world_size);
+    std::vector<double> score_map = std::vector<double>(g.vertices_per_process);
+
+    #pragma omp parallel for
+    for (int rank = 0; rank < g.world_size; rank++) {
+        buffer_array[rank] = std::vector<double>(g.send_size[rank], 0.0);
+    }
+
+    //prepare buffer in vector form
+    for (int i = 0; i < vertices_per_process; i++) {
+        double value = old[i] / static_cast<int>(g.outgoing_edges[i].size());
+
+        for (auto &out : g.outgoing_edges[i]){
+            int rank = g.get_vertex_owner_rank(out);
+            if (rank != g.world_rank){
+                //need to send to other world
+                int out_offset = rank * vertices_per_process;
+                int index = g.send_mapping[rank][out - out_offset];
+                assert(index != -1);
+                buffer_array[rank][index] += value;
+            } else{
+                //update local score map on the destination vertex
+                score_map[out - offset] += value;
+            }
+        }
+    }
+
+    // initialize buffer size
+    // some tips for casting vector to array
+    for (int i = 0; i < g.world_size; i++) {
+        if (i != g.world_rank) {
+            double* send_buf = &buffer_array[i][0];
+            send_bufs.push_back(send_buf);
+            MPI_Isend(send_buf,
+                static_cast<int> (buffer_array[i].size()),
+                MPI_DOUBLE,
+                i, 0, MPI_COMM_WORLD, &send_reqs[i]);
+        }
+    }
+
+    // Receive and update value
+    for (int i = 0; i < g.world_size; i++) {
+        if (i != g.world_rank) {
+            MPI_Status status;
+            double* recv_buf = new double[g.recv_size[i]];
+            recv_bufs.push_back(recv_buf);
+
+            MPI_Recv(recv_buf, g.recv_size[i], MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
+
+            for(int j = 0; j < g.recv_size[i]; j++) {
+                double value = recv_buf[j];
+                int recv_vertex = g.recv_mapping[i][j];
+                score_map[recv_vertex] += value;
+            }
+        }
+    }
+
+    // Update the final value to solution to prepare for next iteration
+    #pragma omp parallel for
+    for (int i = 0; i < vertices_per_process ; i++) {
+        solution[i] = (damping * score_map[i]) + (1.0 - damping) /  total_vertices + g.disjoint_weight;
+    }
+
+    //clear buf
+    #pragma omp parallel for
+    for (size_t i = 0; i < recv_bufs.size(); i++) {
+        delete(recv_bufs[i]);
+    }
+
+    delete(send_reqs);
+}
+
 inline void compute_score(DistGraph &g, double *solution, double *old, double damping) {
 
     int vertices_per_process = g.vertices_per_process;
@@ -395,7 +476,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         delete(send_reqs);
         */
 
-        compute_score(g, solution, old, damping);
+        compute_score_wrong(g, solution, old, damping);
         //printf("%f\n", g.disjoint_weight);
 
         // Phase 3 : Check for convergence
