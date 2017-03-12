@@ -94,7 +94,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
             MPI_Status status;
             MPI_Recv(disjoint_recv_buf, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
-            disjoint_weight +=  disjoint_recv_buf[0];
+            disjoint_weight =  disjoint_recv_buf[0];
         } else {
             for (int i = 1; i < g.world_size; i++) {
                 MPI_Status status;
@@ -110,11 +110,16 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         //Make sure all the sends are received
         MPI_Barrier(MPI_COMM_WORLD);
 
+        if (disjoint_weight) {
+            std::cout << g.world_rank << " has disjoint weight " << disjoint_weight << std::endl;
+        }
+        
         // Phase 2 : send scores across machine
         //std::cout << "From world: " << g.world_rank << " phase 2" << std::endl;
 
         std::vector<double*> send_bufs;
         std::vector<double*> recv_bufs;
+        std::vector<int> send_idx;
 
         // Calculate local score to send to other worlds
         std::vector<double> local_outedge_score = std::vector<double>(local_size);
@@ -127,7 +132,9 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
         // Calculate local outgoing edges score
         for (int i = 0; i < local_size; i++) {
-            local_outedge_score[i] = old[i] / static_cast<int>(g.outgoing_edges[i].size());
+            if (g.outgoing_edges[i].size()) {
+                local_outedge_score[i] = old[i] / static_cast<int>(g.outgoing_edges[i].size());
+            }
         }
 
         for (size_t i = 0; i < g.outgoing_edge_gather.size(); i++) {
@@ -143,6 +150,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
             double* send_buf = new double[send_buf_size];
             if (send_buf_size) {
                 send_bufs.push_back(send_buf);
+                send_idx.push_back(r);
             }
 
             for (int i = 0; i < send_buf_size; i++) {
@@ -186,8 +194,13 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
 
         for (size_t i = 0; i < send_bufs.size(); i++) {
+            if (send_idx[i] != g.world_rank) {
+                MPI_Status status;
+                MPI_Wait(&send_reqs[send_idx[i]], &status);
+            }
             delete(send_bufs[i]);
         }
+
 
         //clear buf
         for (size_t i = 0; i < recv_bufs.size(); i++) {
