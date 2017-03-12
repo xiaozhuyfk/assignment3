@@ -162,7 +162,7 @@ void compute_score_test(DistGraph &g, double *solution, double *old, double damp
     delete(send_reqs);
 }
 
-void compute_score(DistGraph &g, double *solution, double *old, double damping) {
+inline void compute_score(DistGraph &g, double *solution, double *old, double damping) {
 
     int vertices_per_process = g.vertices_per_process;
     int total_vertices = g.total_vertices();
@@ -291,7 +291,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         compute_disjoint_weight(g, damping, old);
 
         // Phase 2 : send scores across machine
-
+        /*
         std::vector<double*> send_bufs;
         std::vector<int> send_idx;
         std::vector<double*> recv_bufs;
@@ -361,8 +361,9 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         }
 
         delete(send_reqs);
+        */
 
-        //compute_score(g, solution, old, damping);
+        compute_score(g, solution, old, damping);
 
         // Phase 3 : Check for convergence
         compute_global_diff(g, solution, old);
