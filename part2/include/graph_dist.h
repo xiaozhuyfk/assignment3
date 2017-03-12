@@ -413,9 +413,10 @@ void DistGraph::setup() {
         send_size[mid] = vertex_queue[mid].size();
         std::vector<Vertex> out_queue(vertex_queue[mid].begin(), vertex_queue[mid].end());
         std::sort(out_queue.begin(), out_queue.end());
-        for (unsigned int i = 0; i < out_queue.size(); i++) {
-            send_mapping[mid][out_queue[i]] = i;
-        }
+        //for (unsigned int i = 0; i < out_queue.size(); i++) {
+        //    send_mapping[mid][out_queue[i]] = i;
+        //}
+        send_mapping[mid] = out_queue;
         vertex_queue[mid].clear();
     }
 
