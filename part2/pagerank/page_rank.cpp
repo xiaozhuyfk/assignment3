@@ -168,6 +168,8 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
             global_diff += rbuf[mid];
         }
     }
+    MPI_Barrier(MPI_COMM_WORLD);
+
     // broadcast global diff to all nodes
     MPI_Bcast(&global_diff, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     if (g.world_rank == 0) {
@@ -342,7 +344,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
         delete(converge_send_reqs);
         */
-        MPI_Barrier(MPI_COMM_WORLD);
+
         double diff = compute_global_diff(g, solution, old);
         converged = (diff < convergence);
     }
