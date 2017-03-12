@@ -73,6 +73,8 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
     double* converge_recv_buf = new double[1];
     MPI_Request* converge_send_reqs = new MPI_Request[g.world_size];
 
+    MPI_Request* send_reqs = new MPI_Request[g.world_size];
+
     while (!converged) {
         std::memcpy(old, solution, sizeof(double) * vertices_per_process);
 
@@ -113,7 +115,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
         std::vector<double*> send_bufs;
         std::vector<double*> recv_bufs;
-        MPI_Request* send_reqs = new MPI_Request[g.world_size];
 
         // Calculate local score to send to other worlds
         std::vector<double> local_outedge_score = std::vector<double>(local_size);
@@ -193,8 +194,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
             delete(recv_bufs[i]);
         }
 
-        delete(send_reqs);
-
         // Phase 3 : Check for convergence
         //std::cout << "From world: " << g.world_rank << " phase 3" << std::endl;
 
@@ -212,7 +211,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
             MPI_Status status;
             MPI_Recv(converge_recv_buf, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
-            diff +=  converge_recv_buf[0];
+            diff = converge_recv_buf[0];
         } else {
             for (int i = 1; i < g.world_size; i++) {
                 MPI_Status status;
@@ -230,8 +229,6 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
         converged = (diff < convergence);
     }
-
-    //std::cout << "Once done" << std::endl;
     // clear disjoint buf
     delete(disjoint_send_buf);
     delete(disjoint_recv_buf);
@@ -242,5 +239,8 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
     delete(converge_recv_buf);
     delete(converge_send_reqs);
 
+    delete(send_reqs);
+
     free(old);
+    //std::cout << "Is this real?" << std::endl;
 }

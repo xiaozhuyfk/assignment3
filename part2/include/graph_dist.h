@@ -413,7 +413,7 @@ void DistGraph::setup() {
     //initialize local disjoint set
     for (int i = 0 ; i < vertices_per_process ; i++) {
         if (!outgoing_edges[i].size()) {
-            disjoint.push_back(i); //push global vertex index
+            disjoint.push_back(i); //push local vertex index
         }
     }
 
