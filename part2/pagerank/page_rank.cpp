@@ -342,6 +342,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
 
         delete(converge_send_reqs);
         */
+        MPI_Barrier(MPI_COMM_WORLD);
         double diff = compute_global_diff(g, solution, old);
         converged = (diff < convergence);
     }
