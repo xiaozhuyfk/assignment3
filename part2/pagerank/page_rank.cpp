@@ -17,71 +17,22 @@ double compute_disjoint_weight(
         double damping,
         double *old) {
 
-    /*
-    int total_vertices = g.total_vertices();
-    std::vector<double*> disjoint_send_bufs;
-    std::vector<int> disjoint_send_idx;
-    std::vector<double*> disjoint_recv_bufs;
-
-    MPI_Request* disjoint_send_reqs = new MPI_Request[g.world_size];
-
-    // Phase 1 : update disjoint weight
-    // Calculate local disjoint weight
-    double disjoint_weight = 0.;
-    #pragma omp parallel for reduction(+:disjoint_weight)
-    for (std::size_t j = 0; j < g.disjoint.size(); j++) {
-        disjoint_weight += damping * old[g.disjoint[j]] / total_vertices;
-    }
-    //pass local disjoint
-    double* disjoint_send_buf = new double[1];
-
-    for (int i = 0; i < g.world_size; i++) {
-        if (i != g.world_rank) {
-            disjoint_send_bufs.push_back(disjoint_send_buf);
-            disjoint_send_idx.push_back(i);
-            disjoint_send_buf[0] = disjoint_weight;
-            MPI_Isend(disjoint_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &disjoint_send_reqs[i]);
-        }
-
-    }
-    //receive and update local disjoint
-
-    for (int i = 0; i < g.world_size; i++) {
-        if (i!=g.world_rank) {
-            MPI_Status status;
-            double* recv_buf = new double[1];
-            disjoint_recv_bufs.push_back(recv_buf);
-
-            MPI_Recv(recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
-            disjoint_weight += recv_buf[0];
-        }
-    }
-
-    // clear disjoint buf
-    delete(disjoint_send_buf);
-
-    for (size_t i = 0; i < disjoint_recv_bufs.size(); i++) {
-        delete(disjoint_recv_bufs[i]);
-    }
-
-    delete(disjoint_send_reqs);
-
-    return disjoint_weight;
-    */
-
     int totalVertices = g.total_vertices();
+
     // Calculate local disjoint weight
     double disjoint_weight = 0.;
     #pragma omp parallel for reduction(+:disjoint_weight)
     for (std::size_t j = 0; j < g.disjoint.size(); j++) {
         disjoint_weight += damping * old[g.disjoint[j]] / totalVertices;
     }
+
     // gather local disjoint weight to root node
     double *rbuf;
     if (g.world_rank == 0) {
        rbuf = new double[g.world_size * sizeof(double)];
     }
     MPI_Gather(&disjoint_weight, 1, MPI_DOUBLE, rbuf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
     // sum the distributed disjoint weight
     double total_weight;
     if (g.world_rank == 0) {
@@ -90,19 +41,17 @@ double compute_disjoint_weight(
             total_weight += rbuf[mid];
         }
     }
+
     // broadcast total disjoint weight to all nodes
     MPI_Bcast(&total_weight, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     if (g.world_rank == 0) {
         delete(rbuf);
     }
+
     return total_weight;
 }
 
 double compute_global_diff(DistGraph &g, double *solution, double *old) {
-
-    std::vector<double*> converge_send_bufs;
-    std::vector<int> converge_send_idx;
-    std::vector<double*> converge_recv_bufs;
 
     MPI_Request* converge_send_reqs = new MPI_Request[g.world_size];
 
@@ -114,13 +63,10 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
     }
 
     // Pass local converge score
-    double* converge_send_buf = new double[1];
+    double send_value = diff;
     for (int i = 0; i < g.world_size; i++) {
         if (i != g.world_rank) {
-            converge_send_bufs.push_back(converge_send_buf);
-            converge_send_idx.push_back(i);
-            converge_send_buf[0] = diff;
-            MPI_Isend(converge_send_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &converge_send_reqs[i]);
+            MPI_Isend(&send_value, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &converge_send_reqs[i]);
         }
 
     }
@@ -128,19 +74,10 @@ double compute_global_diff(DistGraph &g, double *solution, double *old) {
     for (int i = 0; i < g.world_size; i++) {
         if (i!=g.world_rank) {
             MPI_Status status;
-            double* recv_buf = new double[1];
-            converge_recv_bufs.push_back(recv_buf);
-
-            MPI_Recv(recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
-            diff += recv_buf[0];
+            double recv_value;
+            MPI_Recv(&recv_value, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status); //MPI_SOURCE?
+            diff += recv_value;
         }
-    }
-
-    //clear converge buf
-    delete(converge_send_buf);
-
-    for (size_t i = 0; i < converge_recv_bufs.size(); i++) {
-        delete(converge_recv_bufs[i]);
     }
 
     delete(converge_send_reqs);
