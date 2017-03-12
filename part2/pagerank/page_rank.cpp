@@ -366,7 +366,7 @@ void pageRank(DistGraph &g, double* solution, double damping, double convergence
         */
 
         compute_score(g, solution, old, damping);
-        printf("%f\n", g.disjoint_weight);
+        //printf("%f\n", g.disjoint_weight);
 
         // Phase 3 : Check for convergence
         compute_global_diff(g, solution, old);

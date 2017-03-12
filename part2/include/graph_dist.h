@@ -433,6 +433,8 @@ void DistGraph::setup() {
         std::sort(in_queue.begin(), in_queue.end());
         recv_mapping[mid] = in_queue;
     }
+
+    printf("%d\n", disjoint.size());
 }
 
 #endif
