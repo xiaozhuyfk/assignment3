@@ -10,6 +10,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <algorithm>
 
 #include "graph_dist_ref.h"
 
@@ -34,10 +35,12 @@ public:
 
     // TODO: Implement internal representations suitable for doing bfs/pagerank
     // like part 1 from the in_edges and out_edges vectors
-    std::vector<std::vector<Vertex>> incoming_edges;
     std::vector<std::vector<Vertex>> outgoing_edges;
-    std::map<int, int> world_incoming_size;
-    std::map<int, int> world_outgoing_size;
+    std::vector<std::vector<Vertex>> outgoing_edge_scatter;
+    std::vector<std::vector<Vertex>> outgoing_edge_gather;
+    std::vector<std::vector<int>> rank_outedge_lookup;
+    std::vector<std::vector<Vertex>> rank_inedge_lookup;
+    std::vector<int> disjoint;
 
     DistGraph(int _vertices_per_process, int _max_edges_per_vertex,
               GraphType _type, int _world_size, int _world_rank);
@@ -363,45 +366,57 @@ void DistGraph::generate_graph_clustered() {
  */
 inline
 void DistGraph::setup() {
-    incoming_edges = std::vector<std::vector<Vertex>>(vertices_per_process);
+
+    // outgoing_edges maps local source vertex with global dest vertex 
     outgoing_edges = std::vector<std::vector<Vertex>>(vertices_per_process);
-    //world_incoming_edges = std::vector<std::vector<Vertex>>(world_size);
-    //world_outgoing_edges = std::vector<std::vector<Vertex>>(world_size);
+
+    // maps every vertex in graph with its incoming edge(the edge with vertex as dest) in this DistGraph
+    outgoing_edge_scatter = std::vector<std::vector<Vertex>>(total_vertices());
+
+    // checks according to world rank, could derive buffer according to this structure
+    rank_outedge_lookup = std::vector<std::vector<int>>(world_size);
+
+    // lookup incoming edges order
+    rank_inedge_lookup = std::vector<std::vector<Vertex>>(world_size);
+
     int offset = world_rank * vertices_per_process;
-    /*
-    for (auto &e: in_edges){
-        incoming_edges[e.dest].insert(e.src); //map local destination to global source
+    std::vector<std::set<Vertex>> visited = std::vector<std::set<Vertex>>(world_size);
+
+    for (auto &e: in_edges) {
         int rank = get_vertex_owner_rank(e.src);
-        in_map_set[rank].insert(e.src);
+        if (visited[rank].find(e.dest) == visited[rank].end()) {
+            visited[rank].insert(e.dest);
+            rank_inedge_lookup[rank].push_back(e.dest - offset);
+        }
     }
-    for (int i = 0; i < world_size;i++) {
-        std::vector<Vertex> v(in_map_set[i].begin(),in_map_set[i].end());
-        std::sort(v.begin(),v.end());
-        incoming_world_map[i] = v;
+
+    // Sort the incoming local index into correct order according to the outgoing_edge_scatter[world_rank]
+    for (auto &vec: rank_inedge_lookup) {
+        std::sort(vec.begin(), vec.end());
     }
-    for (auto &e: out_edges){
-        outgoing_edges[e.src].insert(e.dest); //map local source to global destination
-        int rank = get_vertex_owner_rank(e.dest);
-        out_map_set[rank].insert(e.dest);
+
+    for (auto &e: out_edges) {
+        outgoing_edges[e.src-offset].push_back(e.dest); //local to global index
+        outgoing_edge_scatter[e.dest].push_back(e.src - offset); // global to local
     }
-    for (int i = 0; i < world_size;i++) {
-        std::vector<Vertex> v(out_map_set[i].begin(),out_map_set[i].end());
-        std::sort(v.begin(),v.end());
-        outgoing_world_map[i] = v;
-    }*/
-    for (auto &e: in_edges){
-        int rank = get_vertex_owner_rank(e.src);
-        world_incoming_size[rank]++;
-        incoming_edges[e.dest-offset].push_back(e.src); //local to global index
-        //std::cout << world_rank << " " << e.dest << e.src << std::endl;
+
+    int index = 0;
+    for (int i = 0; i < total_vertices(); i++) {
+        if (outgoing_edge_scatter[i].size()){
+            outgoing_edge_gather.push_back(outgoing_edge_scatter[i]);
+            int rank = get_vertex_owner_rank(i);
+            rank_outedge_lookup[rank].push_back(index++); //regards which index in outgoing_edge_gather 
+            assert(index == (int) outgoing_edge_gather.size());
+        }
     }
-    //std::cout << "come on" << std::endl;
-    for (auto &e: out_edges){
-        int rank = get_vertex_owner_rank(e.dest);
-        world_outgoing_size[rank]++;
-        outgoing_edges[e.src-offset].push_back(e.dest);//local to global index
-        //std::cout << world_rank << " " << e.dest << e.src << std::endl;
+
+    //initialize local disjoint set
+    for (int i = 0 ; i < vertices_per_process ; i++) {
+        if (!outgoing_edges[i].size()) {
+            disjoint.push_back(i); //push local vertex index
+        }
     }
+
 }
 
 #endif
